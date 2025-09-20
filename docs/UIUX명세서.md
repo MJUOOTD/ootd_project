@@ -7,18 +7,19 @@
 ---
 
 ## 2. 전체 앱 구조 (Information Architecture)
+```text
 앱 진입점 (App.tsx)
 ├── 온보딩 플로우 (OnboardingFlow)
-│ ├── 기본 정보 수집 (이름, 이메일, 성별)
-│ └── 체온 민감도 선택 (추위 많이 탐/보통/더위 많이 탐)│
+│   ├── 기본 정보 수집 (이름, 이메일, 성별)
+│   └── 체온 민감도 선택 (추위 많이 탐/보통/더위 많이 탐)
 └── 메인 앱 (사용자 로그인 후)
-├── 홈 화면 (HomeScreen)
-├── 검색 화면 (SearchScreen) 
-├── 저장함 화면 (SavedScreen)
-├── 알림 화면 (NotificationScreen)
-├── 설정 화면 (SettingsScreen)
-├── 코디 상세 화면 (OutfitDetail)
-└── 하단 네비게이션 (NavigationTabs)
+    ├── 홈 화면 (HomeScreen)
+    ├── 검색 화면 (SearchScreen) 
+    ├── 저장함 화면 (SavedScreen)
+    ├── 알림 화면 (NotificationScreen)
+    ├── 설정 화면 (SettingsScreen)
+    ├── 코디 상세 화면 (OutfitDetail)
+    └── 하단 네비게이션 (NavigationTabs)
 
 ---
 
