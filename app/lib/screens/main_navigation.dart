@@ -3,7 +3,7 @@ import 'home_screen.dart';
 import 'search_screen.dart';
 import 'saved_screen.dart';
 import 'notification_screen.dart';
-import 'settings_screen.dart';
+import '../features/settings/settings_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});

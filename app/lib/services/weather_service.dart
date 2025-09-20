@@ -2,7 +2,19 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import '../models/weather_model.dart';
+import 'weather/weather_service.dart' as weather_interface;
 
+/// Legacy WeatherService implementation
+/// 
+/// This class maintains backward compatibility while the new interface-based
+/// architecture is being implemented. It will be deprecated in favor of
+/// the new WeatherService interface.
+/// 
+/// TODO: Migrate to new WeatherService interface
+/// - Replace direct usage with dependency injection
+/// - Remove this legacy implementation
+/// - Update all consumers to use the new interface
+@Deprecated('Use the new WeatherService interface instead')
 class WeatherService {
   static const String _baseUrl = 'https://api.openweathermap.org/data/2.5';
   static const String _apiKey = 'YOUR_API_KEY'; // Replace with actual API key
@@ -10,6 +22,10 @@ class WeatherService {
   // Get current weather for user's location
   static Future<WeatherModel> getCurrentWeather() async {
     try {
+      // TODO: Replace with new WeatherService interface
+      // final weatherService = GetIt.instance<weather_interface.WeatherService>();
+      // return await weatherService.getCurrentWeather();
+      
       // Get current position
       Position position = await _getCurrentPosition();
       
@@ -35,6 +51,10 @@ class WeatherService {
   // Get weather for specific location
   static Future<WeatherModel> getWeatherForLocation(double lat, double lon) async {
     try {
+      // TODO: Replace with new WeatherService interface
+      // final weatherService = GetIt.instance<weather_interface.WeatherService>();
+      // return await weatherService.getWeatherForLocation(lat, lon);
+      
       final url = Uri.parse(
         '$_baseUrl/weather?lat=$lat&lon=$lon&appid=$_apiKey&units=metric'
       );
@@ -67,6 +87,10 @@ class WeatherService {
   // Get 5-day forecast
   static Future<List<WeatherModel>> getForecast() async {
     try {
+      // TODO: Replace with new WeatherService interface
+      // final weatherService = GetIt.instance<weather_interface.WeatherService>();
+      // return await weatherService.getForecast();
+      
       Position position = await _getCurrentPosition();
       
       final url = Uri.parse(
@@ -87,6 +111,22 @@ class WeatherService {
   }
 
   static Future<Position> _getCurrentPosition() async {
+    // TODO: Replace with new LocationService interface
+    // final locationService = GetIt.instance<LocationService>();
+    // final location = await locationService.getCurrentLocation();
+    // return Position(
+    //   latitude: location.latitude,
+    //   longitude: location.longitude,
+    //   timestamp: DateTime.now(),
+    //   accuracy: 0,
+    //   altitude: 0,
+    //   altitudeAccuracy: 0,
+    //   heading: 0,
+    //   headingAccuracy: 0,
+    //   speed: 0,
+    //   speedAccuracy: 0,
+    // );
+    
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       throw Exception('Location services are disabled.');
