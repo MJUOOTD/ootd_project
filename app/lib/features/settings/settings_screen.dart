@@ -1,41 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/user_provider.dart';
 import 'providers/settings_providers.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  late SettingsProvider _settingsProvider;
-
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _settingsProvider = SettingsProvider();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      _settingsProvider.initialize(userProvider.currentUser);
+      final userProvider = ref.read(userProviderProvider.notifier);
+      ref.read(settingsProviderProvider.notifier).initialize(userProvider.currentUser);
     });
   }
 
-  @override
-  void dispose() {
-    _settingsProvider.dispose();
-    super.dispose();
-  }
-
   Future<void> _saveSettings() async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userProvider = ref.read(userProviderProvider.notifier);
+    final settingsProvider = ref.read(settingsProviderProvider.notifier);
     final currentUser = userProvider.currentUser;
     
     if (currentUser == null) return;
 
-    final updatedUser = _settingsProvider.getUpdatedUser(currentUser);
+    final updatedUser = settingsProvider.getUpdatedUser(currentUser);
     if (updatedUser == null) return;
 
     try {
@@ -65,24 +57,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _settingsProvider,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('설정'),
-          elevation: 0,
-        ),
-        body: Consumer2<UserProvider, SettingsProvider>(
-          builder: (context, userProvider, settingsProvider, child) {
-            final user = userProvider.currentUser;
-            
-            if (user == null) {
-              return const Center(
-                child: Text('로그인이 필요합니다'),
-              );
-            }
-
-            return SingleChildScrollView(
+    final userProvider = ref.watch(userProviderProvider);
+    final user = userProvider.currentUser;
+    final settingsProvider = ref.watch(settingsProviderProvider);
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('설정'),
+        elevation: 0,
+      ),
+      body: user == null
+          ? const Center(
+              child: Text('로그인이 필요합니다'),
+            )
+          : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,10 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildSaveButton(user),
                 ],
               ),
-            );
-          },
-        ),
-      ),
+            ),
     );
   }
 
@@ -171,132 +156,122 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildGenderSelection() {
-    return Consumer<SettingsProvider>(
-      builder: (context, settingsProvider, child) {
-        return Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                RadioListTile<String>(
-                  title: const Text('남성'),
-                  value: 'male',
-                  groupValue: settingsProvider.selectedGender,
-                  onChanged: (value) {
-                    settingsProvider.updateGender(value);
-                  },
-                  activeColor: Theme.of(context).primaryColor,
-                ),
-                RadioListTile<String>(
-                  title: const Text('여성'),
-                  value: 'female',
-                  groupValue: settingsProvider.selectedGender,
-                  onChanged: (value) {
-                    settingsProvider.updateGender(value);
-                  },
-                  activeColor: Theme.of(context).primaryColor,
-                ),
-              ],
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            RadioListTile<String>(
+              title: const Text('남성'),
+              value: 'male',
+              groupValue: ref.watch(settingsProviderProvider).selectedGender,
+              onChanged: (value) {
+                ref.read(settingsProviderProvider.notifier).updateGender(value);
+              },
+              activeColor: Theme.of(context).primaryColor,
             ),
-          ),
-        );
-      },
+            RadioListTile<String>(
+              title: const Text('여성'),
+              value: 'female',
+              groupValue: ref.watch(settingsProviderProvider).selectedGender,
+              onChanged: (value) {
+                ref.read(settingsProviderProvider.notifier).updateGender(value);
+              },
+              activeColor: Theme.of(context).primaryColor,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildSensitivitySelection() {
-    return Consumer<SettingsProvider>(
-      builder: (context, settingsProvider, child) {
-        return Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                RadioListTile<String>(
-                  title: const Text('추위를 많이 탐'),
-                  subtitle: const Text('기준 온도보다 2-3도 높게 추천'),
-                  value: 'high',
-                  groupValue: settingsProvider.selectedSensitivity,
-                  onChanged: (value) {
-                    settingsProvider.updateSensitivity(value);
-                  },
-                  activeColor: Theme.of(context).primaryColor,
-                ),
-                RadioListTile<String>(
-                  title: const Text('보통'),
-                  subtitle: const Text('기준 온도 그대로 추천'),
-                  value: 'normal',
-                  groupValue: settingsProvider.selectedSensitivity,
-                  onChanged: (value) {
-                    settingsProvider.updateSensitivity(value);
-                  },
-                  activeColor: Theme.of(context).primaryColor,
-                ),
-                RadioListTile<String>(
-                  title: const Text('더위를 많이 탐'),
-                  subtitle: const Text('기준 온도보다 2-3도 낮게 추천'),
-                  value: 'low',
-                  groupValue: settingsProvider.selectedSensitivity,
-                  onChanged: (value) {
-                    settingsProvider.updateSensitivity(value);
-                  },
-                  activeColor: Theme.of(context).primaryColor,
-                ),
-              ],
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            RadioListTile<String>(
+              title: const Text('추위를 많이 탐'),
+              subtitle: const Text('기준 온도보다 2-3도 높게 추천'),
+              value: 'high',
+              groupValue: ref.watch(settingsProviderProvider).selectedSensitivity,
+              onChanged: (value) {
+                ref.read(settingsProviderProvider.notifier).updateSensitivity(value);
+              },
+              activeColor: Theme.of(context).primaryColor,
             ),
-          ),
-        );
-      },
+            RadioListTile<String>(
+              title: const Text('보통'),
+              subtitle: const Text('기준 온도 그대로 추천'),
+              value: 'normal',
+              groupValue: ref.watch(settingsProviderProvider).selectedSensitivity,
+              onChanged: (value) {
+                ref.read(settingsProviderProvider.notifier).updateSensitivity(value);
+              },
+              activeColor: Theme.of(context).primaryColor,
+            ),
+            RadioListTile<String>(
+              title: const Text('더위를 많이 탐'),
+              subtitle: const Text('기준 온도보다 2-3도 낮게 추천'),
+              value: 'low',
+              groupValue: ref.watch(settingsProviderProvider).selectedSensitivity,
+              onChanged: (value) {
+                ref.read(settingsProviderProvider.notifier).updateSensitivity(value);
+              },
+              activeColor: Theme.of(context).primaryColor,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildSaveButton(user) {
-    return Consumer<SettingsProvider>(
-      builder: (context, settingsProvider, child) {
-        final hasChanges = settingsProvider.hasChanges(user);
-        final isValid = settingsProvider.isValid;
-        final isLoading = settingsProvider.isLoading;
+    final settingsProvider = ref.watch(settingsProviderProvider);
+    final settingsNotifier = ref.read(settingsProviderProvider.notifier);
+    final hasChanges = settingsNotifier.hasChanges(user);
+    final isValid = settingsNotifier.isValid;
+    final isLoading = settingsProvider.isLoading;
 
-        return SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: (hasChanges && isValid && !isLoading) ? _saveSettings : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 2,
-            ),
-            child: isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Text(
-                    '설정 저장',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: (hasChanges && isValid && !isLoading) ? _saveSettings : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).primaryColor,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-        );
-      },
+          elevation: 2,
+        ),
+        child: isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Text(
+                '설정 저장',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+      ),
     );
   }
 }

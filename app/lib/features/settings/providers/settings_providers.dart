@@ -1,73 +1,87 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/user_model.dart';
 
-class SettingsProvider with ChangeNotifier {
-  String? _selectedGender;
-  String? _selectedSensitivity;
-  bool _isLoading = false;
-  String? _error;
+class SettingsState {
+  final String? selectedGender;
+  final String? selectedSensitivity;
+  final bool isLoading;
+  final String? error;
 
-  String? get selectedGender => _selectedGender;
-  String? get selectedSensitivity => _selectedSensitivity;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
+  SettingsState({
+    this.selectedGender,
+    this.selectedSensitivity,
+    this.isLoading = false,
+    this.error,
+  });
+
+  SettingsState copyWith({
+    String? selectedGender,
+    String? selectedSensitivity,
+    bool? isLoading,
+    String? error,
+  }) {
+    return SettingsState(
+      selectedGender: selectedGender ?? this.selectedGender,
+      selectedSensitivity: selectedSensitivity ?? this.selectedSensitivity,
+      isLoading: isLoading ?? this.isLoading,
+      error: error ?? this.error,
+    );
+  }
+}
+
+class SettingsProvider extends StateNotifier<SettingsState> {
+  SettingsProvider() : super(SettingsState());
+
+  String? get selectedGender => state.selectedGender;
+  String? get selectedSensitivity => state.selectedSensitivity;
+  bool get isLoading => state.isLoading;
+  String? get error => state.error;
 
   // Initialize with user data
   void initialize(UserModel? user) {
     if (user != null) {
-      _selectedGender = user.gender;
-      _selectedSensitivity = user.temperatureSensitivity.level;
+      state = state.copyWith(
+        selectedGender: user.gender,
+        selectedSensitivity: user.temperatureSensitivity.level,
+      );
     }
-    notifyListeners();
   }
 
   // Update gender selection
   void updateGender(String? gender) {
-    _selectedGender = gender;
-    notifyListeners();
+    state = state.copyWith(selectedGender: gender);
   }
 
   // Update sensitivity selection
   void updateSensitivity(String? sensitivity) {
-    _selectedSensitivity = sensitivity;
-    notifyListeners();
+    state = state.copyWith(selectedSensitivity: sensitivity);
   }
 
   // Check if form has changes
   bool hasChanges(UserModel? user) {
     if (user == null) return false;
-    return _selectedGender != user.gender || 
-           _selectedSensitivity != user.temperatureSensitivity.level;
+    return state.selectedGender != user.gender || 
+           state.selectedSensitivity != user.temperatureSensitivity.level;
   }
 
   // Check if form is valid
-  bool get isValid => _selectedGender != null && _selectedSensitivity != null;
+  bool get isValid => state.selectedGender != null && state.selectedSensitivity != null;
 
   // Reset form to user data
   void reset(UserModel? user) {
     if (user != null) {
-      _selectedGender = user.gender;
-      _selectedSensitivity = user.temperatureSensitivity.level;
+      state = state.copyWith(
+        selectedGender: user.gender,
+        selectedSensitivity: user.temperatureSensitivity.level,
+        error: null,
+      );
     } else {
-      _selectedGender = null;
-      _selectedSensitivity = null;
+      state = state.copyWith(
+        selectedGender: null,
+        selectedSensitivity: null,
+        error: null,
+      );
     }
-    _clearError();
-    notifyListeners();
-  }
-
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-
-  void _setError(String error) {
-    _error = error;
-    notifyListeners();
-  }
-
-  void _clearError() {
-    _error = null;
   }
 
   // Convert sensitivity level to TemperatureSensitivity object
@@ -100,9 +114,14 @@ class SettingsProvider with ChangeNotifier {
     if (currentUser == null || !isValid) return null;
 
     return currentUser.copyWith(
-      gender: _selectedGender!,
-      temperatureSensitivity: _convertSensitivityToModel(_selectedSensitivity!),
+      gender: state.selectedGender!,
+      temperatureSensitivity: _convertSensitivityToModel(state.selectedSensitivity!),
       updatedAt: DateTime.now(),
     );
   }
 }
+
+// Provider for SettingsProvider
+final settingsProviderProvider = StateNotifierProvider<SettingsProvider, SettingsState>((ref) {
+  return SettingsProvider();
+});

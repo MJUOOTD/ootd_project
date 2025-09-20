@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/weather_provider.dart';
 import '../providers/user_provider.dart';
 import '../providers/recommendation_provider.dart';
@@ -8,14 +8,14 @@ import '../widgets/outfit_recommendation_widget.dart';
 import '../widgets/recommendation_message_widget.dart';
 import 'outfit_detail_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
@@ -23,9 +23,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initializeData() async {
-    final weatherProvider = Provider.of<WeatherProvider>(context, listen: false);
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final recommendationProvider = Provider.of<RecommendationProvider>(context, listen: false);
+    final weatherProvider = ref.read(weatherProviderProvider.notifier);
+    final userProvider = ref.read(userProviderProvider.notifier);
+    final recommendationProvider = ref.read(recommendationProviderProvider.notifier);
 
     // Fetch weather data
     await weatherProvider.fetchCurrentWeather();
@@ -40,9 +40,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refreshData() async {
-    final weatherProvider = Provider.of<WeatherProvider>(context, listen: false);
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final recommendationProvider = Provider.of<RecommendationProvider>(context, listen: false);
+    final weatherProvider = ref.read(weatherProviderProvider.notifier);
+    final userProvider = ref.read(userProviderProvider.notifier);
+    final recommendationProvider = ref.read(recommendationProviderProvider.notifier);
 
     // Refresh weather data
     await weatherProvider.refreshWeather();
@@ -80,8 +80,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _refreshData,
-        child: Consumer3<WeatherProvider, UserProvider, RecommendationProvider>(
-          builder: (context, weatherProvider, userProvider, recommendationProvider, child) {
+        child: Consumer(
+          builder: (context, ref, child) {
+            final weatherProvider = ref.watch(weatherProviderProvider);
+            final userProvider = ref.watch(userProviderProvider);
+            final recommendationProvider = ref.watch(recommendationProviderProvider);
             if (weatherProvider.isLoading) {
               return const Center(
                 child: CircularProgressIndicator(),

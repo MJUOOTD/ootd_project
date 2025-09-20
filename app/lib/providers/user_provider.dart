@@ -1,91 +1,126 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 
-class UserProvider with ChangeNotifier {
-  UserModel? _currentUser;
-  bool _isLoading = false;
-  String? _error;
-  bool _isFirstTime = true;
+class UserState {
+  final UserModel? currentUser;
+  final bool isLoading;
+  final String? error;
+  final bool isFirstTime;
 
-  UserModel? get currentUser => _currentUser;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
-  bool get isFirstTime => _isFirstTime;
-  bool get isLoggedIn => _currentUser != null;
+  UserState({
+    this.currentUser,
+    this.isLoading = false,
+    this.error,
+    this.isFirstTime = true,
+  });
+
+  UserState copyWith({
+    UserModel? currentUser,
+    bool? isLoading,
+    String? error,
+    bool? isFirstTime,
+  }) {
+    return UserState(
+      currentUser: currentUser ?? this.currentUser,
+      isLoading: isLoading ?? this.isLoading,
+      error: error ?? this.error,
+      isFirstTime: isFirstTime ?? this.isFirstTime,
+    );
+  }
+}
+
+class UserProvider extends StateNotifier<UserState> {
+  UserProvider() : super(UserState());
+
+  UserModel? get currentUser => state.currentUser;
+  bool get isLoading => state.isLoading;
+  String? get error => state.error;
+  bool get isFirstTime => state.isFirstTime;
+  bool get isLoggedIn => state.currentUser != null;
 
   // Initialize user provider
   Future<void> initialize() async {
-    _setLoading(true);
+    state = state.copyWith(isLoading: true);
     
     try {
       // Check if user has completed onboarding
       final prefs = await SharedPreferences.getInstance();
-      _isFirstTime = prefs.getBool('isFirstTime') ?? true;
+      final isFirstTime = prefs.getBool('isFirstTime') ?? true;
       
       // In a real app, you would check Firebase Auth here
       // For now, we'll use SharedPreferences to simulate user state
       final userData = prefs.getString('userData');
+      UserModel? currentUser;
       if (userData != null) {
         // Parse user data from SharedPreferences
-        // _currentUser = UserModel.fromJson(jsonDecode(userData));
+        // currentUser = UserModel.fromJson(jsonDecode(userData));
       }
       
-      notifyListeners();
+      state = state.copyWith(
+        currentUser: currentUser,
+        isFirstTime: isFirstTime,
+        isLoading: false,
+      );
     } catch (e) {
-      _setError('Failed to initialize user: ${e.toString()}');
-    } finally {
-      _setLoading(false);
+      state = state.copyWith(
+        error: 'Failed to initialize user: ${e.toString()}',
+        isLoading: false,
+      );
     }
   }
 
   // Complete onboarding and create user
   Future<void> completeOnboarding(UserModel user) async {
-    _setLoading(true);
-    _clearError();
+    state = state.copyWith(isLoading: true, error: null);
 
     try {
-      _currentUser = user;
-      _isFirstTime = false;
-      
       // Save to SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isFirstTime', false);
       await prefs.setString('userData', user.toJson().toString());
       
-      notifyListeners();
+      state = state.copyWith(
+        currentUser: user,
+        isFirstTime: false,
+        isLoading: false,
+      );
     } catch (e) {
-      _setError('Failed to complete onboarding: ${e.toString()}');
-    } finally {
-      _setLoading(false);
+      state = state.copyWith(
+        error: 'Failed to complete onboarding: ${e.toString()}',
+        isLoading: false,
+      );
     }
   }
 
   // Update user profile
   Future<void> updateUser(UserModel updatedUser) async {
-    _setLoading(true);
-    _clearError();
+    state = state.copyWith(isLoading: true, error: null);
 
     try {
-      _currentUser = updatedUser.copyWith(updatedAt: DateTime.now());
+      final newUser = updatedUser.copyWith(updatedAt: DateTime.now());
       
       // Save to SharedPreferences
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('userData', _currentUser!.toJson().toString());
+      await prefs.setString('userData', newUser.toJson().toString());
       
-      notifyListeners();
+      state = state.copyWith(
+        currentUser: newUser,
+        isLoading: false,
+      );
     } catch (e) {
-      _setError('Failed to update user: ${e.toString()}');
-    } finally {
-      _setLoading(false);
+      state = state.copyWith(
+        error: 'Failed to update user: ${e.toString()}',
+        isLoading: false,
+      );
     }
   }
 
   // Update temperature sensitivity
   Future<void> updateTemperatureSensitivity(TemperatureSensitivity sensitivity) async {
-    if (_currentUser == null) return;
+    if (state.currentUser == null) return;
 
-    final updatedUser = _currentUser!.copyWith(
+    final updatedUser = state.currentUser!.copyWith(
       temperatureSensitivity: sensitivity,
       updatedAt: DateTime.now(),
     );
@@ -95,9 +130,9 @@ class UserProvider with ChangeNotifier {
 
   // Update gender
   Future<void> updateGender(String gender) async {
-    if (_currentUser == null) return;
+    if (state.currentUser == null) return;
 
-    final updatedUser = _currentUser!.copyWith(
+    final updatedUser = state.currentUser!.copyWith(
       gender: gender,
       updatedAt: DateTime.now(),
     );
@@ -107,9 +142,9 @@ class UserProvider with ChangeNotifier {
 
   // Update style preferences
   Future<void> updateStylePreferences(List<String> preferences) async {
-    if (_currentUser == null) return;
+    if (state.currentUser == null) return;
 
-    final updatedUser = _currentUser!.copyWith(
+    final updatedUser = state.currentUser!.copyWith(
       stylePreferences: preferences,
       updatedAt: DateTime.now(),
     );
@@ -119,9 +154,9 @@ class UserProvider with ChangeNotifier {
 
   // Update situation preferences
   Future<void> updateSituationPreferences(Map<String, dynamic> preferences) async {
-    if (_currentUser == null) return;
+    if (state.currentUser == null) return;
 
-    final updatedUser = _currentUser!.copyWith(
+    final updatedUser = state.currentUser!.copyWith(
       situationPreferences: preferences,
       updatedAt: DateTime.now(),
     );
@@ -131,22 +166,24 @@ class UserProvider with ChangeNotifier {
 
   // Logout user
   Future<void> logout() async {
-    _setLoading(true);
+    state = state.copyWith(isLoading: true);
 
     try {
-      _currentUser = null;
-      _isFirstTime = true;
-      
       // Clear SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('userData');
       await prefs.setBool('isFirstTime', true);
       
-      notifyListeners();
+      state = state.copyWith(
+        currentUser: null,
+        isFirstTime: true,
+        isLoading: false,
+      );
     } catch (e) {
-      _setError('Failed to logout: ${e.toString()}');
-    } finally {
-      _setLoading(false);
+      state = state.copyWith(
+        error: 'Failed to logout: ${e.toString()}',
+        isLoading: false,
+      );
     }
   }
 
@@ -178,17 +215,9 @@ class UserProvider with ChangeNotifier {
     );
   }
 
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-
-  void _setError(String error) {
-    _error = error;
-    notifyListeners();
-  }
-
-  void _clearError() {
-    _error = null;
-  }
 }
+
+// Provider for UserProvider
+final userProviderProvider = StateNotifierProvider<UserProvider, UserState>((ref) {
+  return UserProvider();
+});
