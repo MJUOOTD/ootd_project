@@ -16,8 +16,7 @@
     ├── 홈 화면 (HomeScreen)
     ├── 검색 화면 (SearchScreen) 
     ├── 저장함 화면 (SavedScreen)
-    ├── 알림 화면 (NotificationScreen)
-    ├── 설정 화면 (SettingsScreen)
+    ├── MY 화면 (MyScreen)
     ├── 코디 상세 화면 (OutfitDetail)
     └── 하단 네비게이션 (NavigationTabs)
 
