@@ -5,7 +5,7 @@ const app = express();
 app.use(express.json());
 
 // 기상청 API 키 (공공데이터포털에서 발급받은 값으로 교체하세요)
-const SERVICE_KEY = "YOUR_API_KEY";
+const SERVICE_KEY = "key";
 
 // 옷차림 추천 함수 (앞에서 작성한 것 그대로 사용)
 function recommendOutfit(weather, user) {
