@@ -71,7 +71,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const Text(
               'OOTD',
               style: TextStyle(
-                color: Colors.black,
+                color:  const Color.fromARGB(239, 107, 141, 252),
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),

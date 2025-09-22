@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import '../screens/outfit_detail_screen_new.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SituationRecommendationWidget extends StatelessWidget {
+class SituationRecommendationWidget extends ConsumerWidget {
   const SituationRecommendationWidget({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -55,10 +56,10 @@ class SituationRecommendationWidget extends StatelessWidget {
             mainAxisSpacing: 12,
             childAspectRatio: 0.8,
             children: [
-              _buildLookCard('프로페셔널 룩', '4.8', ['프로페셔널', '깔끔한']),
-              _buildLookCard('비즈니스 캐주얼', '4.6', ['프로페셔널', '깔끔한']),
-              _buildLookCard('모던 오피스 룩', '4.7', ['프로페셔널', '깔끔한']),
-              _buildLookCard('엘레강트 워크웨어', '4.5', ['프로페셔널', '깔끔한']),
+              _buildLookCard(context, '프로페셔널 룩', '4.8', ['프로페셔널', '깔끔한']),
+              _buildLookCard(context, '비즈니스 캐주얼', '4.6', ['프로페셔널', '깔끔한']),
+                _buildLookCard(context, '모던 오피스 룩', '4.7', ['프로페셔널', '깔끔한']),
+                _buildLookCard(context, '엘레강트 워크웨어', '4.5', ['프로페셔널', '깔끔한']),
             ],
           ),
         ],
@@ -79,7 +80,7 @@ class SituationRecommendationWidget extends StatelessWidget {
           Icon(
             icon,
             size: 16,
-            color: Colors.black,
+            color: Color.fromARGB(239, 107, 141, 252),
           ),
           const SizedBox(width: 4),
           Text(
@@ -95,10 +96,19 @@ class SituationRecommendationWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildLookCard(String title, String rating, List<String> tags) {
+  Widget _buildLookCard(BuildContext context, String title, String rating, List<String> tags) {
     return InkWell(
       onTap: () {
-        // 룩 상세 페이지로 이동
+        context.pushNamed(
+          'situation-outfit-detail',
+          extra: {
+            'title': title,
+            'rating': rating,
+            'tags': tags,
+            'temperature': '18',
+            'situation': '출근',
+          },
+        );
       },
       borderRadius: BorderRadius.circular(12),
       child: Container(
@@ -210,16 +220,6 @@ class SituationRecommendationWidget extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  void _navigateToOutfitDetail(BuildContext context, String situation) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => OutfitDetailScreenNew(
-          situation: situation,
         ),
       ),
     );

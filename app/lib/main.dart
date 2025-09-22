@@ -18,7 +18,7 @@ class OOTDApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ProviderScope(
       child: MaterialApp.router(
-        title: 'OOTD - Optimal Outfit Tailored by Data',
+        title: 'OOTD - Optimal Outfit Tailorer',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
