@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import '../models/weather_model.dart';
-import 'weather/weather_service.dart' as weather_interface;
+import 'location/location_service.dart';
 
 /// Legacy WeatherService implementation
 /// 
@@ -16,8 +16,8 @@ import 'weather/weather_service.dart' as weather_interface;
 /// - Update all consumers to use the new interface
 @Deprecated('Use the new WeatherService interface instead')
 class WeatherService {
-  static const String _baseUrl = 'https://api.openweathermap.org/data/2.5';
-  static const String _apiKey = 'd8140efacd45cb2fe91d1ebb391ddf8bd959c68cb63e9003d413ef71938e69e5'; // Replace with actual API key
+  static const String _baseUrl = 'https://api.openweathermap.org/data/2.5/weather?q={CITY}&appid={API_KEY}&units=metric&lang=kr';
+  static const String _apiKey = '8c0dfc3837648d4d8eb0282057f1d3a2'; // Replace with actual API key
   
   // Get current weather for user's location
   static Future<WeatherModel> getCurrentWeather() async {
@@ -26,23 +26,25 @@ class WeatherService {
       // final weatherService = GetIt.instance<weather_interface.WeatherService>();
       // return await weatherService.getCurrentWeather();
       
-      // Get current position
-      Position position = await _getCurrentPosition();
+      // Use the new location service
+      final locationService = RealLocationService();
+      final location = await locationService.getCurrentLocation();
       
-      // Make API call
+      // Make API call with location coordinates
       final url = Uri.parse(
-        '$_baseUrl/weather?lat=${position.latitude}&lon=${position.longitude}&appid=$_apiKey&units=metric'
+        'https://api.openweathermap.org/data/2.5/weather?lat=${location.latitude}&lon=${location.longitude}&appid=$_apiKey&units=metric&lang=kr'
       );
       
       final response = await http.get(url);
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return _parseWeatherData(data, position);
+        return _parseWeatherDataFromLocation(data, location);
       } else {
         throw Exception('Failed to load weather data: ${response.statusCode}');
       }
     } catch (e) {
+      print('Weather API error: $e');
       // Return mock data for development
       return _getMockWeatherData();
     }
@@ -91,61 +93,28 @@ class WeatherService {
       // final weatherService = GetIt.instance<weather_interface.WeatherService>();
       // return await weatherService.getForecast();
       
-      Position position = await _getCurrentPosition();
+      // Use the new location service
+      final locationService = RealLocationService();
+      final location = await locationService.getCurrentLocation();
       
       final url = Uri.parse(
-        '$_baseUrl/forecast?lat=${position.latitude}&lon=${position.longitude}&appid=$_apiKey&units=metric'
+        'https://api.openweathermap.org/data/2.5/forecast?lat=${location.latitude}&lon=${location.longitude}&appid=$_apiKey&units=metric&lang=kr'
       );
       
       final response = await http.get(url);
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return _parseForecastData(data, position);
+        return _parseForecastDataFromLocation(data, location);
       } else {
         throw Exception('Failed to load forecast data: ${response.statusCode}');
       }
     } catch (e) {
+      print('Forecast API error: $e');
       return [_getMockWeatherData()];
     }
   }
 
-  static Future<Position> _getCurrentPosition() async {
-    // TODO: Replace with new LocationService interface
-    // final locationService = GetIt.instance<LocationService>();
-    // final location = await locationService.getCurrentLocation();
-    // return Position(
-    //   latitude: location.latitude,
-    //   longitude: location.longitude,
-    //   timestamp: DateTime.now(),
-    //   accuracy: 0,
-    //   altitude: 0,
-    //   altitudeAccuracy: 0,
-    //   heading: 0,
-    //   headingAccuracy: 0,
-    //   speed: 0,
-    //   speedAccuracy: 0,
-    // );
-    
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      throw Exception('Location services are disabled.');
-    }
-
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        throw Exception('Location permissions are denied');
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      throw Exception('Location permissions are permanently denied');
-    }
-
-    return await Geolocator.getCurrentPosition();
-  }
 
   static WeatherModel _parseWeatherData(Map<String, dynamic> data, Position position) {
     return WeatherModel(
@@ -168,7 +137,29 @@ class WeatherService {
     );
   }
 
-  static List<WeatherModel> _parseForecastData(Map<String, dynamic> data, Position position) {
+  static WeatherModel _parseWeatherDataFromLocation(Map<String, dynamic> data, Location location) {
+    return WeatherModel(
+      temperature: data['main']['temp'].toDouble(),
+      feelsLike: data['main']['feels_like'].toDouble(),
+      humidity: data['main']['humidity'],
+      windSpeed: data['wind']['speed'].toDouble(),
+      windDirection: data['wind']['deg'] ?? 0,
+      precipitation: data['rain']?['1h']?.toDouble() ?? 0.0,
+      condition: data['weather'][0]['main'],
+      description: data['weather'][0]['description'],
+      icon: data['weather'][0]['icon'],
+      timestamp: DateTime.now(),
+      location: Location(
+        latitude: location.latitude,
+        longitude: location.longitude,
+        city: data['name'] ?? location.city,
+        country: data['sys']['country'] ?? location.country,
+      ),
+    );
+  }
+
+
+  static List<WeatherModel> _parseForecastDataFromLocation(Map<String, dynamic> data, Location location) {
     List<WeatherModel> forecast = [];
     
     for (var item in data['list']) {
@@ -184,10 +175,10 @@ class WeatherService {
         icon: item['weather'][0]['icon'],
         timestamp: DateTime.fromMillisecondsSinceEpoch(item['dt'] * 1000),
         location: Location(
-          latitude: position.latitude,
-          longitude: position.longitude,
-          city: data['city']['name'] ?? 'Unknown',
-          country: data['city']['country'] ?? 'Unknown',
+          latitude: location.latitude,
+          longitude: location.longitude,
+          city: data['city']['name'] ?? location.city,
+          country: data['city']['country'] ?? location.country,
         ),
       ));
     }

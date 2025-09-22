@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'search_screen.dart';
 import 'saved_screen.dart';
-import 'notification_screen.dart';
-import '../features/settings/settings_screen.dart';
+import 'my_page_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -19,35 +18,29 @@ class _MainNavigationState extends State<MainNavigation> {
     const HomeScreen(),
     const SearchScreen(),
     const SavedScreen(),
-    const NotificationScreen(),
-    const SettingsScreen(),
+    const MyPageScreen(),
   ];
 
   final List<NavigationDestination> _destinations = [
     const NavigationDestination(
       icon: Icon(Icons.home_outlined),
       selectedIcon: Icon(Icons.home),
-      label: 'Home',
+      label: '홈',
     ),
     const NavigationDestination(
       icon: Icon(Icons.search_outlined),
       selectedIcon: Icon(Icons.search),
-      label: 'Search',
+      label: '검색',
     ),
     const NavigationDestination(
       icon: Icon(Icons.favorite_outline),
       selectedIcon: Icon(Icons.favorite),
-      label: 'Saved',
+      label: '좋아요',
     ),
     const NavigationDestination(
-      icon: Icon(Icons.notifications_outlined),
-      selectedIcon: Icon(Icons.notifications),
-      label: 'Alerts',
-    ),
-    const NavigationDestination(
-      icon: Icon(Icons.settings_outlined),
-      selectedIcon: Icon(Icons.settings),
-      label: 'Settings',
+      icon: Icon(Icons.person_outline),
+      selectedIcon: Icon(Icons.person),
+      label: '마이',
     ),
   ];
 

@@ -31,17 +31,12 @@ class AppScaffold extends StatelessWidget {
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite_outline),
             activeIcon: Icon(Icons.favorite),
-            label: '저장함',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_outlined),
-            activeIcon: Icon(Icons.notifications),
-            label: '알림',
+            label: '좋아요',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),
             activeIcon: Icon(Icons.settings),
-            label: '설정',
+            label: '마이',
           ),
         ],
       ),
@@ -57,10 +52,8 @@ class AppScaffold extends StatelessWidget {
         return 1;
       case '/saved':
         return 2;
-      case '/notifications':
-        return 3;
       case '/settings':
-        return 4;
+        return 3;
       default:
         return 0;
     }
@@ -78,9 +71,6 @@ class AppScaffold extends StatelessWidget {
         context.go('/saved');
         break;
       case 3:
-        context.go('/notifications');
-        break;
-      case 4:
         context.go('/settings');
         break;
     }

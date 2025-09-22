@@ -24,7 +24,16 @@ class WeatherProvider with ChangeNotifier {
       _currentWeather = await WeatherService.getCurrentWeather();
       notifyListeners();
     } catch (e) {
-      _setError('Failed to fetch weather data: ${e.toString()}');
+      // More specific error messages for location-related issues
+      String errorMessage = 'Failed to fetch weather data: ${e.toString()}';
+      if (e.toString().contains('Location')) {
+        errorMessage = '위치 정보를 가져올 수 없습니다. 위치 권한을 확인해주세요.';
+      } else if (e.toString().contains('permission')) {
+        errorMessage = '위치 권한이 필요합니다. 설정에서 위치 권한을 허용해주세요.';
+      } else if (e.toString().contains('network')) {
+        errorMessage = '네트워크 연결을 확인해주세요.';
+      }
+      _setError(errorMessage);
     } finally {
       _setLoading(false);
     }

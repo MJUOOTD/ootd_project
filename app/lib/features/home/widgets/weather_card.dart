@@ -40,22 +40,21 @@ class WeatherCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Location and refresh button
+          // Header with weather icon and refresh button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
-                  Icon(
-                    Icons.location_on,
-                    size: 16,
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                  const SizedBox(width: 4),
                   Text(
-                    weather.location,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    weather.conditionIcon,
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '오늘 날씨',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -72,89 +71,113 @@ class WeatherCard extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-
-          // Main weather info
+          const SizedBox(height: 8),
+          
+          // Location
           Row(
             children: [
-              // Temperature and condition
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${weather.temperature.toInt()}°',
-                          style: theme.textTheme.headlineLarge?.copyWith(
-                            fontSize: 48,
-                            fontWeight: FontWeight.w300,
-                            height: 1.0,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              weather.condition,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Text(
-                              '체감 ${weather.feelsLike.toInt()}°',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(0.6),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+              Icon(
+                Icons.location_on,
+                size: 16,
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
               ),
-
-              // Weather icon
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.shadow.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  weather.conditionIcon,
-                  style: const TextStyle(fontSize: 32),
+              const SizedBox(width: 4),
+              Text(
+                weather.location,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
 
+          // Main weather display
+          Center(
+            child: Column(
+              children: [
+                // Large weather icon
+                Text(
+                  weather.conditionIcon,
+                  style: const TextStyle(fontSize: 48),
+                ),
+                const SizedBox(height: 12),
+                
+                // Temperature in blue circle
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${weather.temperature.toInt()}°C',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                
+                // Weather condition
+                Text(
+                  weather.condition,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Weather recommendation message
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  '👕', // Clothes icon
+                  style: const TextStyle(fontSize: 20),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '오늘은 쌀쌀해요. 따뜻한 겉옷을 챙기세요!',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // Weather details
           Row(
             children: [
-              _WeatherDetail(
-                icon: Icons.water_drop,
-                label: '습도',
-                value: '${weather.humidity.toInt()}%',
-                theme: theme,
+              Expanded(
+                child: _WeatherDetail(
+                  icon: Icons.water_drop,
+                  label: '습도',
+                  value: '${weather.humidity.toInt()}%',
+                  theme: theme,
+                ),
               ),
-              const SizedBox(width: 24),
-              _WeatherDetail(
-                icon: Icons.air,
-                label: '바람',
-                value: '${weather.windSpeed.toInt()}m/s ${weather.windDirection}',
-                theme: theme,
+              Expanded(
+                child: _WeatherDetail(
+                  icon: Icons.air,
+                  label: '바람',
+                  value: '${weather.windSpeed.toInt()}m/s',
+                  theme: theme,
+                ),
               ),
             ],
           ),
@@ -293,32 +316,38 @@ class _WeatherDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color: theme.colorScheme.onSurface.withOpacity(0.6),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
         ),
-        const SizedBox(width: 4),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: icon == Icons.water_drop ? Colors.blue : Colors.purple,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
-            Text(
-              value,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }

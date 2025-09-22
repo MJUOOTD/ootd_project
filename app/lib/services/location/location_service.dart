@@ -1,3 +1,4 @@
+import 'package:geolocator/geolocator.dart';
 import '../../../models/weather_model.dart';
 
 /// Location service interface for handling GPS and location permissions
@@ -70,42 +71,182 @@ enum LocationErrorType {
   unknown,
 }
 
+/// Real implementation of LocationService using geolocator
+class RealLocationService implements LocationService {
+  @override
+  Future<bool> isLocationServiceEnabled() async {
+    return await Geolocator.isLocationServiceEnabled();
+  }
+
+  @override
+  Future<LocationPermissionStatus> checkPermissionStatus() async {
+    final permission = await Geolocator.checkPermission();
+    return _convertPermissionStatus(permission);
+  }
+
+  @override
+  Future<bool> requestPermission() async {
+    final permission = await Geolocator.requestPermission();
+    return permission != LocationPermission.denied;
+  }
+
+  @override
+  Future<Location> getCurrentLocation() async {
+    try {
+      // Check if location services are enabled
+      bool serviceEnabled = await isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw LocationException(
+          'Location services are disabled. Please enable location services.',
+          LocationErrorType.serviceDisabled,
+        );
+      }
+
+      // Check permission status
+      LocationPermissionStatus permissionStatus = await checkPermissionStatus();
+      if (permissionStatus == LocationPermissionStatus.denied) {
+        bool granted = await requestPermission();
+        if (!granted) {
+          throw LocationException(
+            'Location permission denied. Please grant location permission.',
+            LocationErrorType.permissionDenied,
+          );
+        }
+      }
+
+      if (permissionStatus == LocationPermissionStatus.deniedForever) {
+        throw LocationException(
+          'Location permission permanently denied. Please enable in settings.',
+          LocationErrorType.permissionDenied,
+        );
+      }
+
+      // Get current position
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      // For now, we'll use a default city name. In a real app, you'd use reverse geocoding
+      return Location(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        city: 'Current Location', // TODO: Implement reverse geocoding
+        country: 'Unknown', // TODO: Implement reverse geocoding
+      );
+    } catch (e) {
+      if (e is LocationException) {
+        rethrow;
+      }
+      throw LocationException(
+        'Failed to get current location: ${e.toString()}',
+        LocationErrorType.unknown,
+      );
+    }
+  }
+
+  @override
+  Future<Location> getLocationWithAccuracy({
+    double desiredAccuracy = 10.0,
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    try {
+      // Check if location services are enabled
+      bool serviceEnabled = await isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw LocationException(
+          'Location services are disabled. Please enable location services.',
+          LocationErrorType.serviceDisabled,
+        );
+      }
+
+      // Check permission status
+      LocationPermissionStatus permissionStatus = await checkPermissionStatus();
+      if (permissionStatus == LocationPermissionStatus.denied) {
+        bool granted = await requestPermission();
+        if (!granted) {
+          throw LocationException(
+            'Location permission denied. Please grant location permission.',
+            LocationErrorType.permissionDenied,
+          );
+        }
+      }
+
+      if (permissionStatus == LocationPermissionStatus.deniedForever) {
+        throw LocationException(
+          'Location permission permanently denied. Please enable in settings.',
+          LocationErrorType.permissionDenied,
+        );
+      }
+
+      // Get current position with specific accuracy
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: timeout,
+      );
+
+      return Location(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        city: 'Current Location', // TODO: Implement reverse geocoding
+        country: 'Unknown', // TODO: Implement reverse geocoding
+      );
+    } catch (e) {
+      if (e is LocationException) {
+        rethrow;
+      }
+      throw LocationException(
+        'Failed to get current location: ${e.toString()}',
+        LocationErrorType.unknown,
+      );
+    }
+  }
+
+  @override
+  bool isPermissionPermanentlyDenied(LocationPermissionStatus status) {
+    return status == LocationPermissionStatus.deniedForever;
+  }
+
+  @override
+  Future<void> openLocationSettings() async {
+    await Geolocator.openLocationSettings();
+  }
+
+  // Helper method to convert geolocator permission to our enum
+  LocationPermissionStatus _convertPermissionStatus(LocationPermission permission) {
+    switch (permission) {
+      case LocationPermission.denied:
+        return LocationPermissionStatus.denied;
+      case LocationPermission.deniedForever:
+        return LocationPermissionStatus.deniedForever;
+      case LocationPermission.whileInUse:
+      case LocationPermission.always:
+        return LocationPermissionStatus.granted;
+      case LocationPermission.unableToDetermine:
+        return LocationPermissionStatus.restricted;
+    }
+  }
+}
+
 /// Mock implementation of LocationService for development
 class MockLocationService implements LocationService {
   @override
   Future<bool> isLocationServiceEnabled() async {
-    // TODO: Replace with actual geolocator implementation
-    // return await Geolocator.isLocationServiceEnabled();
     return true; // Mock: always enabled
   }
 
   @override
   Future<LocationPermissionStatus> checkPermissionStatus() async {
-    // TODO: Replace with actual geolocator implementation
-    // final permission = await Geolocator.checkPermission();
-    // return _convertPermissionStatus(permission);
     return LocationPermissionStatus.granted; // Mock: always granted
   }
 
   @override
   Future<bool> requestPermission() async {
-    // TODO: Replace with actual geolocator implementation
-    // final permission = await Geolocator.requestPermission();
-    // return permission != LocationPermission.denied;
     return true; // Mock: always granted
   }
 
   @override
   Future<Location> getCurrentLocation() async {
-    // TODO: Replace with actual geolocator implementation
-    // final position = await Geolocator.getCurrentPosition();
-    // return Location(
-    //   latitude: position.latitude,
-    //   longitude: position.longitude,
-    //   city: 'Seoul', // Would need reverse geocoding
-    //   country: 'KR',
-    // );
-    
     // Mock data for development
     return Location(
       latitude: 37.5665,
@@ -120,18 +261,6 @@ class MockLocationService implements LocationService {
     double desiredAccuracy = 10.0,
     Duration timeout = const Duration(seconds: 10),
   }) async {
-    // TODO: Replace with actual geolocator implementation
-    // final position = await Geolocator.getCurrentPosition(
-    //   desiredAccuracy: LocationAccuracy.high,
-    //   timeLimit: timeout,
-    // );
-    // return Location(
-    //   latitude: position.latitude,
-    //   longitude: position.longitude,
-    //   city: 'Seoul', // Would need reverse geocoding
-    //   country: 'KR',
-    // );
-    
     // Mock data for development
     return Location(
       latitude: 37.5665,
@@ -148,23 +277,6 @@ class MockLocationService implements LocationService {
 
   @override
   Future<void> openLocationSettings() async {
-    // TODO: Replace with actual implementation
-    // await Geolocator.openLocationSettings();
     throw UnimplementedError('openLocationSettings not implemented in mock');
   }
-
-  // Helper method to convert geolocator permission to our enum
-  // LocationPermissionStatus _convertPermissionStatus(LocationPermission permission) {
-  //   switch (permission) {
-  //     case LocationPermission.denied:
-  //       return LocationPermissionStatus.denied;
-  //     case LocationPermission.deniedForever:
-  //       return LocationPermissionStatus.deniedForever;
-  //     case LocationPermission.whileInUse:
-  //     case LocationPermission.always:
-  //       return LocationPermissionStatus.granted;
-  //     case LocationPermission.unableToDetermine:
-  //       return LocationPermissionStatus.restricted;
-  //   }
-  // }
 }

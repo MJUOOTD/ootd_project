@@ -5,7 +5,8 @@ import '../providers/user_provider.dart';
 import '../providers/recommendation_provider.dart';
 import '../widgets/weather_widget.dart';
 import '../widgets/outfit_recommendation_widget.dart';
-import '../widgets/recommendation_message_widget.dart';
+import '../widgets/hourly_recommendation_widget.dart';
+import '../widgets/situation_recommendation_widget.dart';
 import 'outfit_detail_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -64,18 +65,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'OOTD',
-          style: TextStyle(
-            color: Color(0xFF030213),
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'OOTD',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
         actions: [
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined, color: Color.fromARGB(255, 247, 199, 25), size: 24),
+                onPressed: () {
+                  // 알림 페이지로 이동
+                },
+              ),
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '3',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
           IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xFF030213)),
-            onPressed: _refreshData,
+            icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black, size: 24),
+            onPressed: () {
+              // 장바구니 페이지로 이동
+            },
           ),
         ],
       ),
@@ -136,8 +176,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   
                   const SizedBox(height: 24),
                   
-                  if (weatherState.hasWeather)
-                    RecommendationMessageWidget(weather: weatherState.currentWeather!),
+                  const HourlyRecommendationWidget(),
+                  
+                  const SizedBox(height: 24),
+                  
+                  const SituationRecommendationWidget(),
                   
                   const SizedBox(height: 24),
                   
