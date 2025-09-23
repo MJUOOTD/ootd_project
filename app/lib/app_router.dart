@@ -53,6 +53,7 @@ final GoRouter appRouter = GoRouter(
           tags: extra?['tags'] ?? ['프로페셔널', '깔끔한'],
           temperature: extra?['temperature'] ?? '18',
           situation: extra?['situation'] ?? '출근',
+          imageUrl: extra?['imageUrl'],
         );
       },
     ),
