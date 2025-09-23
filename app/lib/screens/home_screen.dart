@@ -8,6 +8,8 @@ import '../widgets/outfit_recommendation_widget.dart';
 import '../widgets/hourly_recommendation_widget.dart';
 import '../widgets/situation_recommendation_widget.dart';
 import 'outfit_detail_screen.dart';
+import 'notification_list_screen.dart';
+import 'cart_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -82,17 +84,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Stack(
             children: [
               IconButton(
-                icon: const Icon(Icons.notifications_outlined, color: Color.fromARGB(255, 247, 199, 25), size: 24),
+                icon: const Icon(Icons.notifications_outlined, color: Color.fromARGB(255, 225, 204, 126), size: 24),
                 onPressed: () {
-                  // 알림 페이지로 이동
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationListScreen(),
+                    ),
+                  );
                 },
               ),
               Positioned(
                 right: 8,
                 top: 8,
                 child: Container(
-                  width: 18,
-                  height: 18,
+                  width: 14,
+                  height: 14,
                   decoration: const BoxDecoration(
                     color: Colors.red,
                     shape: BoxShape.circle,
@@ -112,9 +118,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
           IconButton(
-            icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black, size: 24),
+            icon: const Icon(Icons.shopping_cart_outlined, color: Color.fromARGB(255, 75, 70, 70), size: 24),
             onPressed: () {
-              // 장바구니 페이지로 이동
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CartScreen(),
+                ),
+              );
             },
           ),
         ],
