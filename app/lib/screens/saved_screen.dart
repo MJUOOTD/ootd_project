@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/user_provider.dart';
-import '../widgets/feedback_modal.dart';
 
 class SavedScreen extends ConsumerStatefulWidget {
   const SavedScreen({super.key});
@@ -11,6 +11,8 @@ class SavedScreen extends ConsumerStatefulWidget {
 }
 
 class _SavedScreenState extends ConsumerState<SavedScreen> {
+  int _selectedTabIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -118,35 +120,41 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
   Widget _buildLoggedInView() {
     return Column(
       children: [
-        // App Bar
+        // Header
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
           decoration: const BoxDecoration(
             color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 4,
-                offset: Offset(0, 2),
-              ),
-            ],
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
                 '저장함',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF333333),
+                  color: Colors.black,
                 ),
               ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.grid_view, color: Color(0xFF333333)),
-                onPressed: () {
-                  // Toggle between grid and list view
-                },
+              const SizedBox(height: 8),
+              Text(
+                '저장한 코디와 구매 내역을 확인하세요',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Tab Navigation
+              Row(
+                children: [
+                  _buildTab('저장한 코디', Icons.favorite_outline, 0),
+                  const SizedBox(width: 16),
+                  _buildTab('장바구니', Icons.shopping_cart_outlined, 1),
+                  const SizedBox(width: 16),
+                  _buildTab('구매내역', Icons.history, 2),
+                ],
               ),
             ],
           ),
@@ -154,191 +162,155 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
         
         // Content
         Expanded(
-          child: _buildSavedOutfitsGrid(),
+          child: _buildTabContent(),
         ),
       ],
     );
   }
 
-  Widget _buildSavedOutfitsGrid() {
-    // Mock saved outfits data for logged in users
-    final savedOutfits = [
-      {
-        'id': '1',
-        'title': '캐주얼 위켄드 룩',
-        'description': '편안한 주말을 위한 코디',
-        'imageUrl': 'https://via.placeholder.com/300x400',
-        'isFavorite': true,
-        'date': DateTime.now().subtract(const Duration(days: 2)),
+  Widget _buildTab(String title, IconData icon, int index) {
+    final isSelected = _selectedTabIndex == index;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedTabIndex = index;
+        });
       },
-      {
-        'id': '2',
-        'title': '비즈니스 캐주얼',
-        'description': '깔끔하고 전문적인 룩',
-        'imageUrl': 'https://via.placeholder.com/300x400',
-        'isFavorite': true,
-        'date': DateTime.now().subtract(const Duration(days: 5)),
-      },
-      {
-        'id': '3',
-        'title': '데이트 나이트',
-        'description': '우아하고 스타일리시한 코디',
-        'imageUrl': 'https://via.placeholder.com/300x400',
-        'isFavorite': true,
-        'date': DateTime.now().subtract(const Duration(days: 7)),
-      },
-    ];
-
-    return savedOutfits.isEmpty
-        ? _buildEmptyState()
-        : GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.75,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.grey[200] : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: Colors.black,
             ),
-            itemCount: savedOutfits.length,
-            itemBuilder: (context, index) {
-              final outfit = savedOutfits[index];
-              return _buildOutfitCard(outfit);
-            },
-          );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.favorite_outline,
-            size: 64,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '저장된 코디가 없어요',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
+            const SizedBox(width: 6),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: Colors.black,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '마음에 드는 코디의 하트를 눌러\n저장해보세요',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildOutfitCard(Map<String, dynamic> outfit) {
+  Widget _buildTabContent() {
+    switch (_selectedTabIndex) {
+      case 0:
+        return _buildSavedOutfitsContent();
+      case 1:
+        return _buildCartContent();
+      case 2:
+        return _buildPurchaseHistoryContent();
+      default:
+        return _buildSavedOutfitsContent();
+    }
+  }
+
+  Widget _buildSavedOutfitsContent() {
+    // 빈 상태로 표시 (사진과 동일하게)
     return Container(
+      margin: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 3,
-            child: Stack(
-              children: [
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.image,
-                      size: 48,
-                      color: Colors.grey[400],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () => _toggleFavorite(outfit['id']),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        outfit['isFavorite'] ? Icons.favorite : Icons.favorite_outline,
-                        color: outfit['isFavorite'] ? Colors.red : Colors.grey,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    outfit['title'],
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    outfit['description'],
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.favorite_outline,
+                size: 64,
+                color: Colors.grey[400],
               ),
-            ),
+              const SizedBox(height: 16),
+              Text(
+                '아직 저장한 코디가 없어요',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '마음에 드는 코디를 저장해보세요!',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[500],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                width: double.infinity,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(239, 107, 141, 252),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(22),
+                    onTap: () {
+                      // 코디 둘러보기 기능
+                    },
+                    child: const Center(
+                      child: Text(
+                        '코디 둘러보기',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  void _toggleFavorite(String outfitId) {
-    setState(() {
-      // Toggle favorite logic here
-    });
+  Widget _buildCartContent() {
+    return const Center(
+      child: Text('장바구니 내용'),
+    );
   }
 
+  Widget _buildPurchaseHistoryContent() {
+    return const Center(
+      child: Text('구매내역 내용'),
+    );
+  }
+
+
   void _navigateToLogin() {
-    // Show feedback modal instead of navigating
-    FeedbackModal.show(context);
+    context.pushNamed('login');
   }
 }

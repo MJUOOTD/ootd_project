@@ -4,10 +4,12 @@ import '../services/location/location_service.dart';
 
 class WeatherWidget extends StatefulWidget {
   final WeatherModel weather;
+  final VoidCallback? onRefresh;
 
   const WeatherWidget({
     super.key,
     required this.weather,
+    this.onRefresh,
   });
 
   @override
@@ -88,6 +90,16 @@ class _WeatherWidgetState extends State<WeatherWidget> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
+              const Spacer(),
+              if (widget.onRefresh != null)
+                GestureDetector(
+                  onTap: widget.onRefresh,
+                  child: Icon(
+                    Icons.refresh,
+                    color: Colors.grey[600],
+                    size: 18,
+                  ),
+                ),
             ],
           ),
           
@@ -209,7 +221,7 @@ class _WeatherWidgetState extends State<WeatherWidget> {
                   icon: Icons.water_drop,
                   label: '습도',
                   value: '${widget.weather.humidity}%',
-                  color: const Color.fromARGB(255, 148, 188, 222)!,
+                  color: const Color.fromARGB(255, 148, 188, 222),
                 ),
               ),
               const SizedBox(width: 12),
@@ -218,7 +230,7 @@ class _WeatherWidgetState extends State<WeatherWidget> {
                   icon: Icons.air,
                   label: '바람',
                   value: '${widget.weather.windSpeed.toStringAsFixed(1)}m/s',
-                  color: const Color.fromARGB(255, 93, 118, 132)!,
+                  color: const Color.fromARGB(255, 93, 118, 132),
                 ),
               ),
             ],

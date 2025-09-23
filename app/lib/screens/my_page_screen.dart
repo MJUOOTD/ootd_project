@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/user_provider.dart';
-import '../widgets/feedback_modal.dart';
 
 class MyPageScreen extends ConsumerStatefulWidget {
   const MyPageScreen({super.key});
@@ -191,36 +191,52 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
   }
 
   void _navigateToLogin() {
-    FeedbackModal.show(context);
+    context.pushNamed('login');
+  }
+
+  void _handleLogout() async {
+    final userProviderNotifier = ref.read(userProvider.notifier);
+    await userProviderNotifier.logout();
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('로그아웃되었습니다'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      // 메인페이지로 이동
+      context.go('/');
+    }
   }
 
   Widget _buildLoggedInView() {
+    final userState = ref.watch(userProvider);
+    
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.only(bottom: 80), // 하단 네비게이션 바 공간 확보
         child: Column(
           children: [
-        // App Bar
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              const Text(
-          '마이 페이지',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+            // App Bar
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  const Text(
+                    '마이 페이지',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-            ],
-        ),
-      ),
-        // Body
-        Expanded(
-          child: SingleChildScrollView(
-        child: Column(
+            ),
+            // Body
+            Column(
           children: [
             // 프로필 섹션
             Container(
@@ -262,23 +278,23 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
                   ),
                   const SizedBox(height: 16),
                   // 사용자 이름
-                  const Text(
-                        '사용자',
-                    style: TextStyle(
+                  Text(
+                    userState.currentUser?.name ?? '사용자',
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                      color: Colors.black,
                     ),
                   ),
                   const SizedBox(height: 8),
                   // 이메일
-                      const Text(
-                    'user@example.com',
-                    style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                        ),
-                      ),
+                  Text(
+                    userState.currentUser?.email ?? 'user@example.com',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                    ),
+                  ),
                     ],
               ),
             ),
@@ -374,9 +390,7 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
                   margin: const EdgeInsets.symmetric(horizontal: 16),
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      // 실제 로그아웃 로직 구현
-                    },
+                    onPressed: _handleLogout,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
                       foregroundColor: Colors.white,
@@ -384,11 +398,9 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
                     child: const Text('로그아웃'),
                   ),
                 ),
+              ],
+            ),
           ],
-        ),
-      ),
-        ),
-        ],
         ),
       ),
     );

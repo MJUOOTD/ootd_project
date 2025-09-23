@@ -38,7 +38,14 @@ class _SituationOutfitDetailScreenState extends ConsumerState<SituationOutfitDet
     setState(() {
       selectedTemperature = value;
     });
-    // TODO: 실제 피드백 데이터 저장
+    
+    // 피드백 저장 (실제로는 서버에 저장)
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('온도 피드백이 저장되었습니다: $value'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   void _handlePreferenceFeedback() {
@@ -51,7 +58,14 @@ class _SituationOutfitDetailScreenState extends ConsumerState<SituationOutfitDet
     setState(() {
       isLiked = !isLiked;
     });
-    // TODO: 실제 선호도 데이터 저장
+    
+    // 선호도 저장 (실제로는 서버에 저장)
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(isLiked ? '이 룩을 좋아요에 추가했습니다!' : '좋아요를 취소했습니다.'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class FeedbackModal extends StatelessWidget {
   const FeedbackModal({super.key});
@@ -205,14 +206,7 @@ class FeedbackModal extends StatelessWidget {
   }
 
   void _navigateToLogin(BuildContext context) {
-    // TODO: Navigate to actual login screen
-    // For now, just show a snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('로그인 화면으로 이동합니다'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    context.pushNamed('login');
   }
 
   static void show(BuildContext context) {

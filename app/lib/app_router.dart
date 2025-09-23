@@ -1,10 +1,22 @@
 import 'package:go_router/go_router.dart';
 import 'screens/main_navigation.dart';
 import 'screens/situation_outfit_detail_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/signup_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
   routes: [
+    GoRoute(
+      path: '/login',
+      name: 'login',
+      builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/signup',
+      name: 'signup',
+      builder: (context, state) => const SignUpScreen(),
+    ),
     GoRoute(
       path: '/',
       name: 'main',
