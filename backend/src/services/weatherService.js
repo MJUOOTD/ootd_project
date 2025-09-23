@@ -16,58 +16,35 @@ export async function getCurrentWeather(lat, lon, opts = {}) {
     nx = g.nx; ny = g.ny;
   }
   const key = `wx:${lat.toFixed(3)}:${lon.toFixed(3)}:${nx ?? 'x'}:${ny ?? 'y'}`;
+  const force = opts.force === true;
   const cached = cacheGet(key);
-  if (cached) return { ...cached, cached: true };
+  if (!force && cached) return { ...cached, cached: true };
 
-  // 1) KMA 우선 사용 (키가 있고 nx,ny가 주어진 경우)
+  // KMA API만 사용
   const kmaKeyRaw = process.env.KMA_SERVICE_KEY || process.env.KMA_API_KEY;
-  const kmaKey = kmaKeyRaw ? encodeURIComponent(kmaKeyRaw) : undefined;
-  if (kmaKey && nx && ny) {
+  if (!kmaKeyRaw) {
+    throw new Error('KMA_SERVICE_KEY is not configured in .env file');
+  }
+  const kmaKey = encodeURIComponent(kmaKeyRaw);
+
+  try {
+    const normalized = await fetchKmaUltraNow(kmaKey, nx, ny, lat, lon);
+    // Reverse geocoding으로 도시/국가 정보 보강 (best-effort)
     try {
-      const normalized = await fetchKmaUltraNow(kmaKey, nx, ny, lat, lon);
-      cacheSet(key, normalized, DEFAULT_TTL_MS);
-      return { ...normalized, cached: false, source: 'kma' };
-    } catch (e) {
-      // KMA 실패 시 다음 소스로 폴백
+      const place = await reverseGeocode(lat, lon);
+      if (place) {
+        normalized.location.city = place.city || normalized.location.city;
+        normalized.location.country = place.country || normalized.location.country;
+      }
+    } catch (_) {
+      // geocode 실패는 무시
     }
+    cacheSet(key, normalized, DEFAULT_TTL_MS);
+    return { ...normalized, cached: false, source: 'kma' };
+  } catch (e) {
+    console.error('Failed to fetch data from KMA API:', e);
+    throw new Error('Failed to fetch weather data from KMA API.');
   }
-
-  // 2) OpenWeather 사용
-  const apiKey = process.env.OPENWEATHER_API_KEY;
-  if (!apiKey) {
-    // 키 없으면 스텁 유지
-    const now = new Date().toISOString();
-    const stub = {
-      timestamp: now,
-      location: { lat, lon },
-      temp: 24.0,
-      feelsLike: 25.5,
-      humidity: 62,
-      windSpeed: 2.1,
-      condition: 'Clouds'
-    };
-    cacheSet(key, stub, DEFAULT_TTL_MS);
-    return { ...stub, cached: false, source: 'stub' };
-  }
-
-  const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    throw new Error(`OpenWeather error: ${resp.status}`);
-  }
-  const data = await resp.json();
-  // 표준화
-  const normalized = {
-    timestamp: new Date(data.dt * 1000).toISOString(),
-    location: { lat, lon },
-    temp: data.main?.temp,
-    feelsLike: data.main?.feels_like,
-    humidity: data.main?.humidity,
-    windSpeed: data.wind?.speed,
-    condition: data.weather?.[0]?.main || 'Unknown'
-  };
-  cacheSet(key, normalized, DEFAULT_TTL_MS);
-  return { ...normalized, cached: false, source: 'openweather' };
 }
 
 // KMA 초단기실황(getUltraSrtNcst) 호출 → 표준화
@@ -91,30 +68,43 @@ async function fetchKmaUltraNow(serviceKey, nx, ny, lat, lon) {
   const j = await resp.json();
   const items = j?.response?.body?.items?.item || [];
 
-  // 카테고리 매핑: T1H(기온), REH(습도), WSD(풍속), RN1(강수), SKY(하늘상태)
+  // 카테고리 매핑: T1H(기온), REH(습도), WSD(풍속), RN1(강수), VEC(풍향), SKY(하늘상태)
   const map = new Map();
   for (const it of items) {
     map.set(it.category, Number(it.obsrValue));
   }
-  const temp = map.get('T1H');
+  const temperature = map.get('T1H');
   const humidity = map.get('REH');
   const windSpeed = map.get('WSD');
+  const windDirection = map.get('VEC');
+  const precipitation = map.get('RN1');
   const sky = map.get('SKY');
 
   const condition = skyToCondition(sky);
-  const feelsLike = typeof temp === 'number' ? temp : undefined; // 단순화
-  const tm = items[0]?.baseDate && items[0]?.baseTime
+  // KMA API는 체감온도를 제공하지 않으므로, 현재 기온으로 대체
+  const feelsLike = typeof temperature === 'number' ? temperature : undefined;
+  const timestamp = items[0]?.baseDate && items[0]?.baseTime
     ? kmaToIso(items[0].baseDate, items[0].baseTime)
     : new Date().toISOString();
 
+  // Flutter WeatherModel에 맞게 데이터 정규화
   return {
-    timestamp: tm,
-    location: { lat, lon },
-    temp,
+    timestamp,
+    temperature,
     feelsLike,
     humidity,
     windSpeed,
-    condition
+    windDirection,
+    precipitation,
+    condition,
+    description: condition, // KMA는 상세 설명을 제공하지 않으므로 condition으로 대체
+    icon: '', // KMA는 아이콘 정보를 제공하지 않음
+    location: {
+      latitude: lat,
+      longitude: lon,
+      city: '', // reverse geocoding으로 보강
+      country: '', // reverse geocoding으로 보강
+    },
   };
 }
 
@@ -147,6 +137,29 @@ function kmaToIso(baseDate, baseTime) {
   const hh = baseTime.slice(0, 2);
   const min = baseTime.slice(2, 4);
   return new Date(`${yyyy}-${mm}-${dd}T${hh}:${min}:00+09:00`).toISOString();
+}
+
+// OpenStreetMap Nominatim을 사용한 간단한 reverse geocoding
+async function reverseGeocode(lat, lon) {
+  const params = new URLSearchParams({
+    format: 'jsonv2',
+    lat: String(lat),
+    lon: String(lon),
+    'accept-language': 'ko'
+  });
+  const url = `https://nominatim.openstreetmap.org/reverse?${params.toString()}`;
+  const resp = await fetch(url, {
+    headers: {
+      'User-Agent': 'project2-weather/1.0 (contact: dev@example.com)'
+    },
+    // 5초 타임아웃 래핑
+  });
+  if (!resp.ok) return null;
+  const j = await resp.json();
+  const addr = j.address || {};
+  const city = addr.city || addr.town || addr.village || addr.county || '';
+  const country = (addr.country_code ? String(addr.country_code).toUpperCase() : '') || addr.country || '';
+  return { city, country };
 }
 
 
