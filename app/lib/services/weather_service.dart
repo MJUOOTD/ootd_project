@@ -41,6 +41,10 @@ class WeatherService {
       }
     } catch (e) {
       print('Weather API error: $e');
+      print('Error type: ${e.runtimeType}');
+      if (e is http.ClientException) {
+        print('HTTP Client Exception: ${e.message}');
+      }
       // Return mock data for development
       return _getMockWeatherData();
     }
