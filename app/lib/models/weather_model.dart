@@ -97,12 +97,14 @@ class Location {
   final double longitude;
   final String city;
   final String country;
+  final String? district;
 
   Location({
     required this.latitude,
     required this.longitude,
     required this.city,
     required this.country,
+    this.district,
   });
 
   factory Location.fromJson(Map<String, dynamic> json) {
@@ -111,6 +113,7 @@ class Location {
       longitude: (json['longitude'] ?? 0.0).toDouble(),
       city: json['city'] ?? '',
       country: json['country'] ?? '',
+      district: json['district'],
     );
   }
 
@@ -120,7 +123,18 @@ class Location {
       'longitude': longitude,
       'city': city,
       'country': country,
+      'district': district,
     };
+  }
+
+  // Get formatted location string with district only
+  String get formattedLocation {
+    List<String> parts = [];
+    
+    if (city.isNotEmpty) parts.add(city);
+    if (district != null && district!.isNotEmpty) parts.add(district!);
+    
+    return parts.join(' ');
   }
 }
 

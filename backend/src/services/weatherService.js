@@ -40,7 +40,6 @@ export async function getCurrentWeather(lat, lon, opts = {}) {
         normalized.location.city = place.city || normalized.location.city;
         normalized.location.country = place.country || normalized.location.country;
         normalized.location.district = place.district || normalized.location.district;
-        normalized.location.subLocality = place.subLocality || normalized.location.subLocality;
       }
     } catch (_) {
       // geocode 실패는 무시
@@ -117,7 +116,6 @@ async function fetchKmaUltraNow(serviceKey, nx, ny, lat, lon) {
       city: '', // reverse geocoding으로 보강
       country: '', // reverse geocoding으로 보강
       district: '', // 구 (city_district/borough/state_district/county 등에서 추출)
-      subLocality: '', // 동 (suburb/neighbourhood/village/hamlet 등에서 추출)
     },
   };
 }
@@ -175,10 +173,9 @@ async function reverseGeocode(lat, lon) {
   const country = (addr.country_code ? String(addr.country_code).toUpperCase() : '') || addr.country || '';
   // 구 후보 필드 우선순위: city_district > borough > state_district > county > district
   const district = addr.city_district || addr.borough || addr.state_district || addr.county || addr.district || '';
-  // 동 후보 필드 우선순위: suburb > neighbourhood > quarter > village > hamlet
-  const subLocality = addr.suburb || addr.neighbourhood || addr.quarter || addr.village || addr.hamlet || '';
-  return { city, country, district, subLocality };
+  return { city, country, district };
 }
+
 
 function buildFallback(lat, lon) {
   const nowIso = new Date().toISOString();
@@ -199,7 +196,6 @@ function buildFallback(lat, lon) {
       city: '',
       country: '',
       district: '',
-      subLocality: '',
     },
     source: 'fallback',
     cached: false,

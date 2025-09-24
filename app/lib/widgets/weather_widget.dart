@@ -117,7 +117,7 @@ class _WeatherWidgetState extends State<WeatherWidget> {
               ),
               const SizedBox(width: 4),
               Text(
-                widget.weather.location.city,
+                widget.weather.location.formattedLocation,
                 style: TextStyle(
                   color: Colors.grey[700],
                   fontSize: 12,

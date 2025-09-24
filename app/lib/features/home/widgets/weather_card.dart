@@ -83,7 +83,7 @@ class WeatherCard extends ConsumerWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                weather.location,
+                weather.location.formattedLocation,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurface.withOpacity(0.7),
                 ),
