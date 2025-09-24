@@ -32,17 +32,37 @@ class WeatherModel {
   });
 
   factory WeatherModel.fromJson(Map<String, dynamic> json) {
+    double _asDouble(dynamic v) {
+      if (v == null) return 0.0;
+      if (v is num) return v.toDouble();
+      if (v is String) return double.tryParse(v) ?? 0.0;
+      return 0.0;
+    }
+    int _asInt(dynamic v) {
+      if (v == null) return 0;
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v) ?? (double.tryParse(v)?.round() ?? 0);
+      return 0;
+    }
+    String _asString(dynamic v) => v == null ? '' : v.toString();
+
+    final ts = json['timestamp'];
+    final DateTime parsedTs = ts is String && ts.isNotEmpty
+        ? (DateTime.tryParse(ts) ?? DateTime.now())
+        : DateTime.now();
+
     return WeatherModel(
-      temperature: (json['temperature'] ?? 0.0).toDouble(),
-      feelsLike: (json['feelsLike'] ?? 0.0).toDouble(),
-      humidity: json['humidity'] ?? 0,
-      windSpeed: (json['windSpeed'] ?? 0.0).toDouble(),
-      windDirection: json['windDirection'] ?? 0,
-      precipitation: (json['precipitation'] ?? 0.0).toDouble(),
-      condition: json['condition'] ?? '',
-      description: json['description'] ?? '',
-      icon: json['icon'] ?? '',
-      timestamp: DateTime.parse(json['timestamp'] ?? DateTime.now().toIso8601String()),
+      temperature: _asDouble(json['temperature']),
+      feelsLike: _asDouble(json['feelsLike']),
+      humidity: _asInt(json['humidity']),
+      windSpeed: _asDouble(json['windSpeed']),
+      windDirection: _asInt(json['windDirection']),
+      precipitation: _asDouble(json['precipitation']),
+      condition: _asString(json['condition']),
+      description: _asString(json['description']),
+      icon: _asString(json['icon']),
+      timestamp: parsedTs,
       location: Location.fromJson(json['location'] ?? {}),
       source: json['source'],
       cached: json['cached'],
@@ -105,12 +125,16 @@ class Location {
   final double longitude;
   final String city;
   final String country;
+  final String? district;     // 구
+  final String? subLocality;  // 동
 
   Location({
     required this.latitude,
     required this.longitude,
     required this.city,
     required this.country,
+    this.district,
+    this.subLocality,
   });
 
   factory Location.fromJson(Map<String, dynamic> json) {
@@ -119,6 +143,8 @@ class Location {
       longitude: (json['longitude'] ?? 0.0).toDouble(),
       city: json['city'] ?? '',
       country: json['country'] ?? '',
+      district: json['district'],
+      subLocality: json['subLocality'],
     );
   }
 
@@ -128,6 +154,8 @@ class Location {
       'longitude': longitude,
       'city': city,
       'country': country,
+      'district': district,
+      'subLocality': subLocality,
     };
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ootd_app/providers/weather_provider.dart';
+import 'package:ootd_app/models/weather_model.dart';
 
 class WeatherWidget extends ConsumerWidget {
   const WeatherWidget({super.key});
@@ -66,17 +67,6 @@ class WeatherWidget extends ConsumerWidget {
                       notifier.refreshWeather(force: true);
                     },
                   ),
-                  // 재설정 버튼 (캐시 초기화 겸 현재값 재조회)
-                  IconButton(
-                    tooltip: '재설정',
-                    icon: const Icon(Icons.restart_alt, size: 18),
-                    color: Colors.grey[700],
-                    onPressed: () async {
-                      final notifier = ref.read(weatherProvider);
-                      notifier.clearWeather();
-                      await notifier.fetchCurrentWeather(force: true);
-                    },
-                  ),
                 ],
               ),
             ],
@@ -94,7 +84,7 @@ class WeatherWidget extends ConsumerWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                (w.location.city.isEmpty ? 'Seoul' : w.location.city),
+                _formatLocation(w.location),
                 style: TextStyle(
                   color: Colors.grey[700],
                   fontSize: 12,
@@ -265,6 +255,15 @@ class WeatherWidget extends ConsumerWidget {
     );
   }
 
+
+  String _formatLocation(Location loc) {
+    final parts = <String>[];
+    if ((loc.city).isNotEmpty) parts.add(loc.city);
+    if ((loc.district ?? '').isNotEmpty) parts.add(loc.district!);
+    if ((loc.subLocality ?? '').isNotEmpty) parts.add(loc.subLocality!);
+    if (parts.isEmpty) return '현재 위치';
+    return parts.join(' ');
+  }
 
   String _getWeatherConditionKorean(String condition) {
     switch (condition.toLowerCase()) {

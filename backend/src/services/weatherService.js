@@ -18,7 +18,10 @@ export async function getCurrentWeather(lat, lon, opts = {}) {
   const key = `wx:${lat.toFixed(3)}:${lon.toFixed(3)}:${nx ?? 'x'}:${ny ?? 'y'}`;
   const force = opts.force === true;
   const cached = cacheGet(key);
-  if (!force && cached) return { ...cached, cached: true };
+  if (!force && cached) {
+    console.log(`[weather] cache hit key=${key}`);
+    return { ...cached, cached: true };
+  }
 
   // KMA API만 사용
   const kmaKeyRaw = process.env.KMA_SERVICE_KEY || process.env.KMA_API_KEY;
@@ -28,6 +31,7 @@ export async function getCurrentWeather(lat, lon, opts = {}) {
   const kmaKey = encodeURIComponent(kmaKeyRaw);
 
   try {
+    console.log(`[weather] fetch KMA nx=${nx} ny=${ny} lat=${lat} lon=${lon} force=${force}`);
     const normalized = await fetchKmaUltraNow(kmaKey, nx, ny, lat, lon);
     // Reverse geocoding으로 도시/국가 정보 보강 (best-effort)
     try {
@@ -35,6 +39,8 @@ export async function getCurrentWeather(lat, lon, opts = {}) {
       if (place) {
         normalized.location.city = place.city || normalized.location.city;
         normalized.location.country = place.country || normalized.location.country;
+        normalized.location.district = place.district || normalized.location.district;
+        normalized.location.subLocality = place.subLocality || normalized.location.subLocality;
       }
     } catch (_) {
       // geocode 실패는 무시
@@ -43,7 +49,13 @@ export async function getCurrentWeather(lat, lon, opts = {}) {
     return { ...normalized, cached: false, source: 'kma' };
   } catch (e) {
     console.error('Failed to fetch data from KMA API:', e);
-    throw new Error('Failed to fetch weather data from KMA API.');
+    // 폴백: 캐시가 있으면 캐시 반환, 없으면 정해진 기본값 반환
+    if (cached) {
+      console.warn('[weather] returning cached due to KMA failure');
+      return { ...cached, cached: true, source: cached.source ?? 'cache' };
+    }
+    console.warn('[weather] returning fallback weather');
+    return buildFallback(lat, lon);
   }
 }
 
@@ -104,6 +116,8 @@ async function fetchKmaUltraNow(serviceKey, nx, ny, lat, lon) {
       longitude: lon,
       city: '', // reverse geocoding으로 보강
       country: '', // reverse geocoding으로 보강
+      district: '', // 구 (city_district/borough/state_district/county 등에서 추출)
+      subLocality: '', // 동 (suburb/neighbourhood/village/hamlet 등에서 추출)
     },
   };
 }
@@ -159,7 +173,37 @@ async function reverseGeocode(lat, lon) {
   const addr = j.address || {};
   const city = addr.city || addr.town || addr.village || addr.county || '';
   const country = (addr.country_code ? String(addr.country_code).toUpperCase() : '') || addr.country || '';
-  return { city, country };
+  // 구 후보 필드 우선순위: city_district > borough > state_district > county > district
+  const district = addr.city_district || addr.borough || addr.state_district || addr.county || addr.district || '';
+  // 동 후보 필드 우선순위: suburb > neighbourhood > quarter > village > hamlet
+  const subLocality = addr.suburb || addr.neighbourhood || addr.quarter || addr.village || addr.hamlet || '';
+  return { city, country, district, subLocality };
+}
+
+function buildFallback(lat, lon) {
+  const nowIso = new Date().toISOString();
+  return {
+    timestamp: nowIso,
+    temperature: 22,
+    feelsLike: 22,
+    humidity: 60,
+    windSpeed: 2,
+    windDirection: 0,
+    precipitation: 0,
+    condition: 'Clear',
+    description: 'fallback',
+    icon: '',
+    location: {
+      latitude: lat,
+      longitude: lon,
+      city: '',
+      country: '',
+      district: '',
+      subLocality: '',
+    },
+    source: 'fallback',
+    cached: false,
+  };
 }
 
 
