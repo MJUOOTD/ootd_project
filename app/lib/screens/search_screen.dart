@@ -27,7 +27,7 @@ class _SearchScreenState extends State<SearchScreen> {
         title: const Text(
           'Search',
           style: TextStyle(
-            color: Color.fromARGB(239, 107, 141, 252),
+            color: const Color.fromARGB(239, 107, 141, 252),
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),

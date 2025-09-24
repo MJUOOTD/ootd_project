@@ -1,19 +1,62 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ootd_app/providers/weather_provider.dart';
-import 'package:ootd_app/models/weather_model.dart';
+import '../models/weather_model.dart';
+import '../services/location/location_service.dart';
 
-class WeatherWidget extends ConsumerWidget {
-  const WeatherWidget({super.key});
+class WeatherWidget extends StatefulWidget {
+  final WeatherModel weather;
+  final VoidCallback? onRefresh;
+
+  const WeatherWidget({
+    super.key,
+    required this.weather,
+    this.onRefresh,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(weatherProvider);
-    final w = state.currentWeather;
-    final isLoading = state.isLoading;
+  State<WeatherWidget> createState() => _WeatherWidgetState();
+}
 
-    if (isLoading) return _buildSkeleton();
-    if (w == null) return _buildEmpty();
+class _WeatherWidgetState extends State<WeatherWidget> {
+  bool _isLocationPermissionGranted = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLocationPermission();
+  }
+
+  Future<void> _checkLocationPermission() async {
+    try {
+      final locationService = RealLocationService();
+      final permissionStatus = await locationService.checkPermissionStatus();
+      
+      setState(() {
+        _isLocationPermissionGranted = permissionStatus == LocationPermissionStatus.granted;
+      });
+    } catch (e) {
+      setState(() {
+        _isLocationPermissionGranted = false;
+      });
+    }
+  }
+
+  Future<void> _requestLocationPermission() async {
+    try {
+      final locationService = RealLocationService();
+      final granted = await locationService.requestPermission();
+      
+      setState(() {
+        _isLocationPermissionGranted = granted;
+      });
+    } catch (e) {
+      setState(() {
+        _isLocationPermissionGranted = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -32,43 +75,31 @@ class WeatherWidget extends ConsumerWidget {
         children: [
           // Header
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.ac_unit,
+              Icon(
+                Icons.ac_unit,
+                color: Colors.grey[600],
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '오늘 날씨',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              if (widget.onRefresh != null)
+                GestureDetector(
+                  onTap: widget.onRefresh,
+                  child: Icon(
+                    Icons.refresh,
                     color: Colors.grey[600],
-                    size: 16,
+                    size: 18,
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '오늘 날씨',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  // cached badge only
-                  _Badge(text: (w.cached == true) ? 'CACHED' : 'LIVE', color: (w.cached == true) ? Colors.orange : Colors.green),
-                  const SizedBox(width: 8),
-                  // 새로고침 버튼
-                  IconButton(
-                    tooltip: '새로고침',
-                    icon: const Icon(Icons.refresh, size: 18),
-                    color: Colors.grey[700],
-                    onPressed: () {
-                      final notifier = ref.read(weatherProvider);
-                      notifier.refreshWeather(force: true);
-                    },
-                  ),
-                ],
-              ),
+                ),
             ],
           ),
           
@@ -79,12 +110,14 @@ class WeatherWidget extends ConsumerWidget {
             children: [
               Icon(
                 Icons.location_on,
-                color: Colors.blue[600],
+                color: _isLocationPermissionGranted 
+                    ? Colors.blue[600] 
+                    : Colors.orange[600],
                 size: 14,
               ),
               const SizedBox(width: 4),
               Text(
-                _formatLocation(w.location),
+                widget.weather.location.city,
                 style: TextStyle(
                   color: Colors.grey[700],
                   fontSize: 12,
@@ -107,7 +140,7 @@ class WeatherWidget extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  _iconFromCondition(w.condition),
+                  Icons.wb_sunny,
                   color: Colors.orange[600],
                   size: 40,
                 ),
@@ -131,7 +164,7 @@ class WeatherWidget extends ConsumerWidget {
                         ),
                       ),
                       child: Text(
-                        '${w.temperature.round()}°C',
+                        '${widget.weather.temperature.round()}°C',
                         style: const TextStyle(
                           color: Colors.black,
                           fontSize: 24,
@@ -143,7 +176,7 @@ class WeatherWidget extends ConsumerWidget {
                     const SizedBox(height: 8),
                     
                     Text(
-                      _getWeatherConditionKorean(w.condition),
+                      _getWeatherConditionKorean(widget.weather.condition),
                       style: TextStyle(
                         color: Colors.grey[700],
                         fontSize: 16,
@@ -187,7 +220,7 @@ class WeatherWidget extends ConsumerWidget {
                 child: _buildWeatherDetail(
                   icon: Icons.water_drop,
                   label: '습도',
-                  value: '${w.humidity}%',
+                  value: '${widget.weather.humidity}%',
                   color: const Color.fromARGB(255, 148, 188, 222),
                 ),
               ),
@@ -196,7 +229,7 @@ class WeatherWidget extends ConsumerWidget {
                 child: _buildWeatherDetail(
                   icon: Icons.air,
                   label: '바람',
-                  value: '${w.windSpeed.toStringAsFixed(1)}m/s',
+                  value: '${widget.weather.windSpeed.toStringAsFixed(1)}m/s',
                   color: const Color.fromARGB(255, 93, 118, 132),
                 ),
               ),
@@ -205,14 +238,46 @@ class WeatherWidget extends ConsumerWidget {
           
           
           // Location permission action button
-          // 새로고침 버튼 예: 외부에서 제공 가능
+          if (!_isLocationPermissionGranted) ...[
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: _requestLocationPermission,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.orange.withOpacity(0.5),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      color: Colors.orange,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '위치 권한 허용하기',
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
-
-  static Widget _buildSkeleton() => Container(height: 160, decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(12)));
-  static Widget _buildEmpty() => Container(padding: const EdgeInsets.all(16), child: const Text('날씨 정보를 불러올 수 없습니다'));
 
   Widget _buildWeatherDetail({
     required IconData icon,
@@ -256,15 +321,6 @@ class WeatherWidget extends ConsumerWidget {
   }
 
 
-  String _formatLocation(Location loc) {
-    final parts = <String>[];
-    if ((loc.city).isNotEmpty) parts.add(loc.city);
-    if ((loc.district ?? '').isNotEmpty) parts.add(loc.district!);
-    if ((loc.subLocality ?? '').isNotEmpty) parts.add(loc.subLocality!);
-    if (parts.isEmpty) return '현재 위치';
-    return parts.join(' ');
-  }
-
   String _getWeatherConditionKorean(String condition) {
     switch (condition.toLowerCase()) {
       case 'clear':
@@ -286,7 +342,7 @@ class WeatherWidget extends ConsumerWidget {
   }
 
   String _getWeatherMessage() {
-    final temp = 22.0; // 메시지 단순화용, 실제 추천 로직과 연동 시 교체 가능
+    final temp = widget.weather.temperature;
     
     if (temp < 10) {
       return "오늘은 쌀쌀해요. 따뜻한 겉옷을 챙기세요!";
@@ -297,48 +353,5 @@ class WeatherWidget extends ConsumerWidget {
     } else {
       return "더운 날씨네요. 시원한 옷차림을 추천해요!";
     }
-  }
-
-  IconData _iconFromCondition(String c) {
-    switch (c.toLowerCase()) {
-      case 'clear':
-        return Icons.wb_sunny;
-      case 'clouds':
-      case 'overcast':
-        return Icons.cloud;
-      case 'rain':
-        return Icons.umbrella;
-      case 'snow':
-        return Icons.ac_unit;
-      default:
-        return Icons.wb_cloudy;
-    }
-  }
-}
-
-class _Badge extends StatelessWidget {
-  final String text;
-  final Color color;
-  const _Badge({required this.text, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.4)),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.3,
-        ),
-      ),
-    );
   }
 }

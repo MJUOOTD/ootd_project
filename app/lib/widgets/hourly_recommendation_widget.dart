@@ -252,7 +252,7 @@ class HourlyRecommendationWidget extends StatelessWidget {
                         Text(weatherEmoji, style: const TextStyle(fontSize: 24)),
                         const SizedBox(width: 12),
                         Text(
-                          '$currentRecommendation - $temperature℃',
+                          '$currentRecommendation - ${temperature}℃',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,

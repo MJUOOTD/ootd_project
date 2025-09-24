@@ -15,6 +15,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+  String _selectedTemperatureSensitivity = '보통';
 
   @override
   void dispose() {
@@ -229,6 +230,26 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       ),
                     ),
                     
+                    const SizedBox(height: 20),
+                    
+                    // Temperature Sensitivity Selection
+                    const Text(
+                      '체온 민감도',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Temperature Sensitivity Options
+                    _buildTemperatureOption('더위를 많이 탐', '평소보다 시원한 옷을 추천해드려요', '더위를 많이 탐'),
+                    const SizedBox(height: 12),
+                    _buildTemperatureOption('보통', '일반적인 날씨 기준으로 추천해드려요', '보통'),
+                    const SizedBox(height: 12),
+                    _buildTemperatureOption('추위를 많이 탐', '평소보다 따뜻한 옷을 추천해드려요', '추위를 많이 탐'),
+                    
                     const SizedBox(height: 32),
                     
                     // Signup Button
@@ -314,6 +335,50 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     );
   }
 
+  Widget _buildTemperatureOption(String title, String subtitle, String value) {
+    final isSelected = _selectedTemperatureSensitivity == value;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedTemperatureSensitivity = value;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.grey[200] : Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Colors.grey[400]! : Colors.grey[300]!,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.black : Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 14,
+                color: isSelected ? Colors.grey[600] : Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _handleSignup() async {
     if (_idController.text.isEmpty || _passwordController.text.isEmpty || _confirmPasswordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -338,6 +403,29 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     // 간단한 회원가입 로직 (실제로는 Firebase Auth 등을 사용)
     final userProviderNotifier = ref.read(userProvider.notifier);
     
+    // 선택된 체온 민감도에 따른 설정값 계산
+    double coldSensitivity = 0.0;
+    double heatSensitivity = 0.0;
+    String level = 'normal';
+    
+    switch (_selectedTemperatureSensitivity) {
+      case '더위를 많이 탐':
+        coldSensitivity = 0.0;
+        heatSensitivity = 0.5;
+        level = 'heat_sensitive';
+        break;
+      case '보통':
+        coldSensitivity = 0.0;
+        heatSensitivity = 0.0;
+        level = 'normal';
+        break;
+      case '추위를 많이 탐':
+        coldSensitivity = 0.5;
+        heatSensitivity = 0.0;
+        level = 'cold_sensitive';
+        break;
+    }
+
     // 임시 사용자 생성 (실제로는 서버에서 인증)
     final user = userProviderNotifier.createUser(
       name: _idController.text,
@@ -347,9 +435,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       bodyType: '보통',
       activityLevel: '보통',
       temperatureSensitivity: TemperatureSensitivity(
-        coldSensitivity: 0.0,
-        heatSensitivity: 0.0,
-        level: 'normal',
+        coldSensitivity: coldSensitivity,
+        heatSensitivity: heatSensitivity,
+        level: level,
       ),
       stylePreferences: ['캐주얼', '깔끔한'],
       situationPreferences: {

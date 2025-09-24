@@ -1,0 +1,47 @@
+{
+   "checksum": "0e07b10c00c3d2f02b81f539858a68de",
+   "roots": {
+      "bookmark_bar": {
+         "children": [  ],
+         "date_added": "13403175884581081",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
+         "id": "1",
+         "name": "북마크바",
+         "type": "folder"
+      },
+      "other": {
+         "children": [ {
+            "date_added": "13403175996224689",
+            "date_last_used": "0",
+            "guid": "192271da-ba05-4f15-8c37-b8a41de7e167",
+            "id": "5",
+            "meta_info": {
+               "power_bookmark_meta": ""
+            },
+            "name": "OOTD - Optimal Outfit Tailored by Data",
+            "type": "url",
+            "url": "http://localhost:60537/#/home"
+         } ],
+         "date_added": "13403175884581081",
+         "date_last_used": "0",
+         "date_modified": "13403175996224689",
+         "guid": "82b081ec-3dd3-529c-8475-ab6c344590dd",
+         "id": "2",
+         "name": "기타 북마크",
+         "type": "folder"
+      },
+      "synced": {
+         "children": [  ],
+         "date_added": "13403175884581081",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "4cf2e351-0e85-532b-bb37-df045d8f8d0f",
+         "id": "3",
+         "name": "모바일 북마크",
+         "type": "folder"
+      }
+   },
+   "version": 1
+}

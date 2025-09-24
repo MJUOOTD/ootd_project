@@ -207,7 +207,7 @@ class _SituationPreferencesStepState extends State<SituationPreferencesStep> {
             trailing: Switch(
               value: isEnabled,
               onChanged: (value) => _updatePreference(key, 'enabled', value),
-              activeThumbColor: Colors.white,
+              activeColor: Colors.white,
             ),
             onTap: () => _updatePreference(key, 'enabled', !isEnabled),
           ),

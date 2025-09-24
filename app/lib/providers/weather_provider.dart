@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/weather_model.dart';
-import '../services/service_locator.dart';
+import '../services/weather_service.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,12 +16,12 @@ class WeatherProvider with ChangeNotifier {
   String? get error => _error;
   bool get hasWeather => _currentWeather != null;
 
-  Future<void> fetchCurrentWeather({bool force = false}) async {
+  Future<void> fetchCurrentWeather() async {
     _setLoading(true);
     _clearError();
 
     try {
-      _currentWeather = await serviceLocator.weatherService.getCurrentWeather(force: force);
+      _currentWeather = await WeatherService.getCurrentWeather();
       notifyListeners();
     } catch (e) {
       // More specific error messages for location-related issues
@@ -44,8 +44,7 @@ class WeatherProvider with ChangeNotifier {
     _clearError();
 
     try {
-      // 백엔드 forecast 미구현: 현재값 1개로 대체
-      _forecast = await serviceLocator.weatherService.getForecast();
+      _forecast = await WeatherService.getForecast();
       notifyListeners();
     } catch (e) {
       _setError('Failed to fetch forecast data: ${e.toString()}');
@@ -54,18 +53,11 @@ class WeatherProvider with ChangeNotifier {
     }
   }
 
-  Future<void> refreshWeather({bool force = false}) async {
-    _setLoading(true);
-    _clearError();
-    try {
-      _currentWeather = await serviceLocator.weatherService.getCurrentWeather(force: force);
-      _forecast = [_currentWeather!];
-      notifyListeners();
-    } catch (e) {
-      _setError('Failed to refresh weather: ${e.toString()}');
-    } finally {
-      _setLoading(false);
-    }
+  Future<void> refreshWeather() async {
+    await Future.wait([
+      fetchCurrentWeather(),
+      fetchForecast(),
+    ]);
   }
 
   Future<WeatherModel> getWeatherForLocation(double lat, double lon) async {
@@ -73,7 +65,7 @@ class WeatherProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final weather = await serviceLocator.weatherService.getWeatherForLocation(lat, lon);
+      final weather = await WeatherService.getWeatherForLocation(lat, lon);
       _currentWeather = weather;
       notifyListeners();
       return weather;
