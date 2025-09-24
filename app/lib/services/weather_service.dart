@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import '../models/weather_model.dart';
@@ -27,8 +28,10 @@ class WeatherService {
       final location = await locationService.getCurrentLocation();
       
       // Make API call to backend server
+      // Use localhost for web, 10.0.2.2 for Android emulator
+      final baseUrl = kIsWeb ? 'http://localhost:4000' : 'http://10.0.2.2:4000';
       final url = Uri.parse(
-        'http://localhost:4000/api/weather/current?lat=${location.latitude}&lon=${location.longitude}'
+        '$baseUrl/api/weather/current?lat=${location.latitude}&lon=${location.longitude}'
       );
       
       final response = await http.get(url);
@@ -54,8 +57,10 @@ class WeatherService {
   static Future<WeatherModel> getWeatherForLocation(double lat, double lon) async {
     try {
       // Make API call to backend server
+      // Use localhost for web, 10.0.2.2 for Android emulator
+      final baseUrl = kIsWeb ? 'http://localhost:4000' : 'http://10.0.2.2:4000';
       final url = Uri.parse(
-        'http://localhost:4000/api/weather/current?lat=$lat&lon=$lon'
+        '$baseUrl/api/weather/current?lat=$lat&lon=$lon'
       );
       
       final response = await http.get(url);

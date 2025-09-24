@@ -3,10 +3,23 @@ import 'screens/main_navigation.dart';
 import 'screens/situation_outfit_detail_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
+import 'screens/onboarding/welcome_onboarding_screen.dart';
+import 'screens/initial_screen.dart';
+import 'services/onboarding_service.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
   routes: [
+    GoRoute(
+      path: '/',
+      name: 'initial',
+      builder: (context, state) => const InitialScreen(),
+    ),
+    GoRoute(
+      path: '/onboarding',
+      name: 'onboarding',
+      builder: (context, state) => const WelcomeOnboardingScreen(),
+    ),
     GoRoute(
       path: '/login',
       name: 'login',
@@ -18,7 +31,7 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const SignUpScreen(),
     ),
     GoRoute(
-      path: '/',
+      path: '/main',
       name: 'main',
       builder: (context, state) => const MainNavigation(),
     ),
