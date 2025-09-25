@@ -27,7 +27,7 @@ class _SearchScreenState extends State<SearchScreen> {
         title: const Text(
           'Search',
           style: TextStyle(
-            color: Color(0xFF030213),
+            color: Color.fromARGB(239, 107, 141, 252),
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -114,7 +114,7 @@ class _SearchScreenState extends State<SearchScreen> {
         // Handle filter selection
       },
       backgroundColor: const Color(0xFFF8F9FA),
-      selectedColor: const Color(0xFF030213),
+      selectedColor:const Color.fromARGB(239, 107, 141, 252),
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : const Color(0xFF666666),
         fontWeight: FontWeight.w500,
@@ -192,7 +192,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     child: Icon(
                       Icons.image,
                       size: 48,
-                      color: Colors.grey[400],
+                      color:  const Color.fromARGB(239, 107, 141, 252),
                     ),
                   ),
                 ),

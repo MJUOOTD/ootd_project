@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // Color definitions based on design system
-  static const Color primaryColor = Color(0xFF030213);
+  static const Color primaryColor = Color(0xFF121212); // 기본 검정색으로 변경
   static const Color backgroundColor = Color(0xFFFFFFFF);
   static const Color mutedColor = Color(0xFFECECF0);
-  static const Color accentColor = Color(0xFFE9EBEF);
+  static const Color accentColor = Color(0xFFE9EBEF); // 기본 회색으로 복원
   static const Color destructiveColor = Color(0xFFD4183D);
   
   // Secondary color mapped from oklch(0.95 0.0058 264.53) to neutral light tone
@@ -31,12 +31,10 @@ class AppTheme {
         primary: primaryColor,
         secondary: secondaryColor,
         surface: backgroundColor,
-        background: backgroundColor,
         error: destructiveColor,
         onPrimary: Colors.white,
         onSecondary: primaryColor,
         onSurface: primaryColor,
-        onBackground: primaryColor,
         onError: Colors.white,
         outline: mutedColor,
         outlineVariant: accentColor,
@@ -158,12 +156,10 @@ class AppTheme {
         primary: primaryColor,
         secondary: darkSecondaryColor,
         surface: darkSurfaceColor,
-        background: darkBackgroundColor,
         error: destructiveColor,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: Colors.white,
-        onBackground: Colors.white,
         onError: Colors.white,
         outline: darkMutedColor,
         outlineVariant: darkAccentColor,

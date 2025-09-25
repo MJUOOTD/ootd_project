@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
 
 class UserState {
   final UserModel? currentUser;
@@ -67,6 +68,35 @@ class UserProvider extends StateNotifier<UserState> {
       state = state.copyWith(
         error: 'Failed to initialize user: ${e.toString()}',
         isLoading: false,
+      );
+    }
+  }
+
+  // Unified sign-out: Firebase session + local state reset, with auth-state wait
+  Future<void> signOutAll() async {
+    state = state.copyWith(isLoading: true, error: null);
+    Object? signOutError;
+    try {
+      await fb.FirebaseAuth.instance.signOut();
+      try {
+        await fb.FirebaseAuth.instance
+            .authStateChanges()
+            .firstWhere((u) => u == null)
+            .timeout(const Duration(seconds: 3), onTimeout: () => null);
+      } catch (_) {
+        // Ignore wait errors; we'll still finalize local state
+      }
+    } catch (e) {
+      signOutError = e;
+    } finally {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('userData');
+      await prefs.setBool('isFirstTime', true);
+      state = state.copyWith(
+        currentUser: null,
+        isFirstTime: true,
+        isLoading: false,
+        error: signOutError == null ? null : 'Failed to sign out: ${signOutError.toString()}',
       );
     }
   }
@@ -164,7 +194,7 @@ class UserProvider extends StateNotifier<UserState> {
     
     await updateUser(updatedUser);
   }
-
+  /* signOutAll 로 대체
   // Logout user
   Future<void> logout() async {
     state = state.copyWith(isLoading: true);
@@ -187,6 +217,7 @@ class UserProvider extends StateNotifier<UserState> {
       );
     }
   }
+  */
 
   // Create a new user for onboarding
   UserModel createUser({
@@ -221,4 +252,8 @@ class UserProvider extends StateNotifier<UserState> {
 // Provider for UserProvider
 final userProvider = StateNotifierProvider<UserProvider, UserState>((ref) {
   return UserProvider();
+});
+
+final authStateProvider = StreamProvider<fb.User?>((ref) {
+  return fb.FirebaseAuth.instance.authStateChanges();
 });

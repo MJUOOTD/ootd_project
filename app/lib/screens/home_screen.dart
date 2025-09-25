@@ -5,8 +5,11 @@ import '../providers/user_provider.dart';
 import '../providers/recommendation_provider.dart';
 import '../widgets/weather_widget.dart';
 import '../widgets/outfit_recommendation_widget.dart';
-import '../widgets/recommendation_message_widget.dart';
+import '../widgets/hourly_recommendation_widget.dart';
+import '../widgets/situation_recommendation_widget.dart';
 import 'outfit_detail_screen.dart';
+import 'notification_list_screen.dart';
+import 'cart_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -26,8 +29,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _initializeData() async {
-    // Use .notifier to call actions (functions) on your provider.
-    await ref.read(weatherProvider.notifier).fetchCurrentWeather();
+    // ChangeNotifierProvider는 .notifier가 아닌 인스턴스에 직접 호출
+    final weatherSvc = ref.read(weatherProvider);
+    await weatherSvc.fetchCurrentWeather();
+    if (!mounted) return;
 
     // Read the provider's state to check values.
     final userState = ref.read(userProvider);
@@ -36,24 +41,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Check conditions using the state objects.
     if (userState.isLoggedIn && weatherState.hasWeather) {
       await ref.read(recommendationProvider.notifier).generateRecommendations(
-            weather: weatherState.currentWeather!,
-            user: userState.currentUser!,
-          );
+        weather: weatherState.currentWeather!,
+        user: userState.currentUser!,
+      );
+      if (!mounted) return;
     }
   }
 
   Future<void> _refreshData() async {
-    // Same logic for refreshing data.
-    await ref.read(weatherProvider.notifier).refreshWeather();
+    // ChangeNotifierProvider는 .notifier가 아닌 인스턴스에 직접 호출
+    final weatherSvc = ref.read(weatherProvider);
+    await weatherSvc.refreshWeather();
+    if (!mounted) return;
 
     final userState = ref.read(userProvider);
     final weatherState = ref.read(weatherProvider);
 
     if (userState.isLoggedIn && weatherState.hasWeather) {
       await ref.read(recommendationProvider.notifier).refreshRecommendations(
-            weather: weatherState.currentWeather!,
-            user: userState.currentUser!,
-          );
+        weather: weatherState.currentWeather!,
+        user: userState.currentUser!,
+      );
+      if (!mounted) return;
     }
   }
 
@@ -64,18 +73,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'OOTD',
-          style: TextStyle(
-            color: Color(0xFF030213),
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'OOTD',
+              style: TextStyle(
+                color:  Color.fromARGB(239, 107, 141, 252),
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
         actions: [
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined, color: Color.fromARGB(255, 225, 204, 126), size: 24),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationListScreen(),
+                    ),
+                  );
+                },
+              ),
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '3',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
           IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xFF030213)),
-            onPressed: _refreshData,
+            icon: const Icon(Icons.shopping_cart_outlined, color: Color.fromARGB(255, 75, 70, 70), size: 24),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CartScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -132,12 +188,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: 24),
                   
                   if (weatherState.hasWeather)
-                    WeatherWidget(weather: weatherState.currentWeather!),
+                    const WeatherWidget(),
                   
                   const SizedBox(height: 24),
                   
-                  if (weatherState.hasWeather)
-                    RecommendationMessageWidget(weather: weatherState.currentWeather!),
+                  const HourlyRecommendationWidget(),
+                  
+                  const SizedBox(height: 24),
+                  
+                  const SituationRecommendationWidget(),
                   
                   const SizedBox(height: 24),
                   
@@ -193,7 +252,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (recommendationState.isLoading) {
       return const Center(
         child: Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: EdgeInsets.all(32.0),
           child: CircularProgressIndicator(),
         ),
       );
@@ -214,7 +273,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (!recommendationState.hasRecommendations) {
       return const Center(
         child: Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: EdgeInsets.all(32.0),
           child: Text('No recommendations available'),
         ),
       );

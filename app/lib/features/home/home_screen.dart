@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'providers/home_providers.dart';
 import 'widgets/weather_card.dart';
 import 'widgets/outfit_recommendation.dart' as outfit_widget;
-import 'widgets/weather_message_banner.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/hourly_recommendation_widget.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -34,12 +35,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('OOTD'),
-        centerTitle: true,
+        title: const Text(
+          'OOTD',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
         actions: [
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined, color: Colors.black, size: 24),
+                onPressed: () {
+                  context.go('/notifications');
+                },
+              ),
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '3',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
           IconButton(
-            onPressed: _onRefresh,
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black, size: 24),
+            onPressed: () {
+              // 장바구니 기능은 추후 구현 예정
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('장바구니 기능은 준비 중입니다')),
+              );
+            },
           ),
         ],
       ),
@@ -59,8 +105,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const WeatherCard(),
               const SizedBox(height: 24),
 
-              // Weather message banner
-              const WeatherMessageBanner(),
+              // Hourly recommendation
+              const HourlyRecommendationWidget(),
               const SizedBox(height: 24),
 
               // Outfit recommendation

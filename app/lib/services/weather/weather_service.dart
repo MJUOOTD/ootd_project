@@ -17,12 +17,12 @@ import '../../../models/weather_model.dart';
 abstract class WeatherService {
   /// Get current weather for user's location
   /// Throws [WeatherException] if API call fails
-  Future<WeatherModel> getCurrentWeather();
+  Future<WeatherModel> getCurrentWeather({bool force = false});
 
   /// Get current weather for specific coordinates
   /// [latitude] - latitude coordinate
   /// [longitude] - longitude coordinate
-  Future<WeatherModel> getWeatherForLocation(double latitude, double longitude);
+  Future<WeatherModel> getWeatherForLocation(double latitude, double longitude, {bool force = false});
 
   /// Get 5-day weather forecast for current location
   Future<List<WeatherModel>> getForecast();
@@ -74,7 +74,7 @@ class MockWeatherService implements WeatherService {
   DateTime? _lastUpdate;
 
   @override
-  Future<WeatherModel> getCurrentWeather() async {
+  Future<WeatherModel> getCurrentWeather({bool force = false}) async {
     // TODO: Replace with actual OpenWeather API implementation
     // try {
     //   final locationService = GetIt.instance<LocationService>();
@@ -89,7 +89,7 @@ class MockWeatherService implements WeatherService {
   }
 
   @override
-  Future<WeatherModel> getWeatherForLocation(double latitude, double longitude) async {
+  Future<WeatherModel> getWeatherForLocation(double latitude, double longitude, {bool force = false}) async {
     // TODO: Replace with actual OpenWeather API implementation
     // try {
     //   final apiKey = await _getApiKey();
