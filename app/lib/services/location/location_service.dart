@@ -127,12 +127,14 @@ class RealLocationService implements LocationService {
         timeLimit: const Duration(seconds: 10),
       );
 
-      // For now, we'll use a default city name. In a real app, you'd use reverse geocoding
+      // Reverse geocoding은 백엔드에서 처리하므로 도시/국가는 비워 둠
       return Location(
         latitude: position.latitude,
         longitude: position.longitude,
-        city: 'Current Location', // TODO: Implement reverse geocoding
-        country: 'Unknown', // TODO: Implement reverse geocoding
+        city: '',
+        country: '',
+        district: '',
+        subLocality: '',
       );
     } catch (e) {
       if (e is LocationException) {
@@ -188,8 +190,10 @@ class RealLocationService implements LocationService {
       return Location(
         latitude: position.latitude,
         longitude: position.longitude,
-        city: 'Current Location', // TODO: Implement reverse geocoding
-        country: 'Unknown', // TODO: Implement reverse geocoding
+        city: '',
+        country: '',
+        district: '',
+        subLocality: '',
       );
     } catch (e) {
       if (e is LocationException) {
@@ -251,8 +255,10 @@ class MockLocationService implements LocationService {
     return Location(
       latitude: 37.5665,
       longitude: 126.9780,
-      city: 'Seoul',
-      country: 'KR',
+      city: '',
+      country: '',
+      district: '',
+      subLocality: '',
     );
   }
 
@@ -265,8 +271,10 @@ class MockLocationService implements LocationService {
     return Location(
       latitude: 37.5665,
       longitude: 126.9780,
-      city: 'Seoul',
-      country: 'KR',
+      city: '',
+      country: '',
+      district: '',
+      subLocality: '',
     );
   }
 

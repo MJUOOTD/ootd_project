@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ootd_app/providers/weather_provider.dart';
+import 'package:ootd_app/models/weather_model.dart';
+// removed unused: weather_model import not needed after using internal _HourlyItem
 
-class HourlyRecommendationWidget extends StatelessWidget {
+class HourlyRecommendationWidget extends ConsumerWidget {
   const HourlyRecommendationWidget({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final now = DateTime.now();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final weatherState = ref.watch(weatherProvider);
+    final List<_HourlyItem> hourly = _build3HourSlotsFromForecast(weatherState);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -58,13 +63,18 @@ class HourlyRecommendationWidget extends StatelessWidget {
               height: 100,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: 8, // 현재 시간부터 8시간
+                itemCount: hourly.length,
                 itemBuilder: (context, index) {
-                  final displayHour = (now.hour + index) % 24;
-                  final timeSlot = _getTimeSlot(displayHour);
-                  final weatherEmoji = _getWeatherEmoji(displayHour);
-                  final recommendation = _getRecommendation(displayHour);
-                  final temperature = _getTemperature(displayHour);
+                  final item = hourly[index];
+                  final dt = item.time;
+                  final displayHour = dt.hour;
+                  final now = DateTime.now();
+                  final alignedNow = DateTime(now.year, now.month, now.day, now.hour - (now.hour % 3));
+                  final isNow = dt.year == alignedNow.year && dt.month == alignedNow.month && dt.day == alignedNow.day && dt.hour == alignedNow.hour;
+                  final timeSlot = _formatTimeSlot(dt);
+                  final icon = _materialIconFromCondition(item.condition);
+                  final recommendation = _getRecommendation(dt.hour);
+                  final String temperatureText = item.temperature.toStringAsFixed(1);
 
                   return Container(
                     width: 80,
@@ -77,7 +87,7 @@ class HourlyRecommendationWidget extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            index == 0 ? '지금' : timeSlot,
+                            isNow ? '지금' : timeSlot,
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -85,10 +95,7 @@ class HourlyRecommendationWidget extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            weatherEmoji,
-                            style: const TextStyle(fontSize: 20),
-                          ),
+                          Icon(icon, size: 20, color: Colors.grey[800]),
                           const SizedBox(height: 4),
                           Flexible(
                             child: Text(
@@ -105,7 +112,7 @@ class HourlyRecommendationWidget extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '$temperature°',
+                            '$temperatureText°',
                             style: const TextStyle(
                               fontSize: 10,
                               color: Colors.black,
@@ -355,6 +362,75 @@ class HourlyRecommendationWidget extends StatelessWidget {
     );
   }
 
+  List<_HourlyItem> _build3HourSlotsFromForecast(dynamic weatherState) {
+    final List<WeatherModel> forecast = (weatherState.forecast as List).cast<WeatherModel>();
+    if (forecast.length >= 2) {
+      // 정상 예보: 상위 8개 사용
+      return forecast.take(8).map<_HourlyItem>((m) => _HourlyItem(time: m.timestamp, temperature: m.temperature, condition: m.condition)).toList();
+    }
+    // 예보가 0~1개여도 최소 8칸 보장: 기준 시각부터 3시간씩 증가
+    final now = DateTime.now();
+    final WeatherModel? current = weatherState.currentWeather as WeatherModel?;
+    final DateTime aligned = DateTime(now.year, now.month, now.day, now.hour - (now.hour % 3));
+    final double temp = forecast.isNotEmpty ? forecast.first.temperature : (current?.temperature ?? 22.0);
+    final String cond = forecast.isNotEmpty ? forecast.first.condition : (current?.condition ?? 'Clear');
+    return List.generate(8, (i) {
+      final t = aligned.add(Duration(hours: 3 * i));
+      return _HourlyItem(
+        time: t,
+        temperature: temp,
+        condition: cond,
+      );
+    });
+  }
+
+  String _formatTimeSlot(DateTime dt) {
+    final hh = dt.hour.toString().padLeft(2, '0');
+    final mm = dt.minute.toString().padLeft(2, '0');
+    return '$hh:$mm';
+  }
+
+  String _emojiFromCondition(String condition) {
+    switch (condition.toLowerCase()) {
+      case 'clear':
+        return '🌞';
+      case 'clouds':
+      case 'overcast':
+        return '⛅';
+      case 'rain':
+        return '🌧';
+      case 'snow':
+        return '❄';
+      case 'thunderstorm':
+        return '⛈';
+      case 'mist':
+      case 'fog':
+        return '🌫';
+      default:
+        return '☁';
+    }
+  }
+
+  IconData _materialIconFromCondition(String condition) {
+    switch (condition.toLowerCase()) {
+      case 'clear':
+        return Icons.wb_sunny;
+      case 'clouds':
+      case 'overcast':
+        return Icons.cloud;
+      case 'rain':
+        return Icons.umbrella;
+      case 'snow':
+        return Icons.ac_unit;
+      case 'thunderstorm':
+        return Icons.thunderstorm;
+      case 'mist':
+      case 'fog':
+        return Icons.blur_on;
+      default:
+        return Icons.wb_cloudy;
+    }
+  }
   List<String> _getAlternativeOptions(int hour) {
     final weatherEmoji = _getWeatherEmoji(hour);
 
@@ -414,4 +490,12 @@ class AlternativeOption {
   final String description;
 
   AlternativeOption(this.icon, this.name, this.description);
+}
+
+class _HourlyItem {
+  final DateTime time;
+  final double temperature;
+  final String condition;
+
+  _HourlyItem({required this.time, required this.temperature, required this.condition});
 }

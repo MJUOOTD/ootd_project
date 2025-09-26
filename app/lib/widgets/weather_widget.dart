@@ -12,6 +12,8 @@ class WeatherWidget extends ConsumerWidget {
     final w = state.currentWeather;
     final isLoading = state.isLoading;
 
+    print('WeatherWidget build: isLoading=$isLoading, weather=$w');
+    
     if (isLoading) return _buildSkeleton();
     if (w == null) return _buildEmpty();
     return Container(
@@ -54,10 +56,7 @@ class WeatherWidget extends ConsumerWidget {
               ),
               Row(
                 children: [
-                  // cached badge only
-                  _Badge(text: (w.cached == true) ? 'CACHED' : 'LIVE', color: (w.cached == true) ? Colors.orange : Colors.green),
-                  const SizedBox(width: 8),
-                  // 새로고침 버튼
+                  // 새로고침 버튼만 노출
                   IconButton(
                     tooltip: '새로고침',
                     icon: const Icon(Icons.refresh, size: 18),
@@ -166,7 +165,7 @@ class WeatherWidget extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    _getWeatherMessage(),
+                    _getWeatherMessage(w),
                     style: TextStyle(
                       color: const Color.fromARGB(255, 133, 133, 136),
                       fontSize: 14,
@@ -285,8 +284,8 @@ class WeatherWidget extends ConsumerWidget {
     }
   }
 
-  String _getWeatherMessage() {
-    final temp = 22.0; // 메시지 단순화용, 실제 추천 로직과 연동 시 교체 가능
+  String _getWeatherMessage(WeatherModel? weather) {
+    final temp = weather?.temperature ?? 22.0;
     
     if (temp < 10) {
       return "오늘은 쌀쌀해요. 따뜻한 겉옷을 챙기세요!";

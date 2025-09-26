@@ -32,20 +32,20 @@ class WeatherModel {
   });
 
   factory WeatherModel.fromJson(Map<String, dynamic> json) {
-    double _asDouble(dynamic v) {
+    double asDouble(dynamic v) {
       if (v == null) return 0.0;
       if (v is num) return v.toDouble();
       if (v is String) return double.tryParse(v) ?? 0.0;
       return 0.0;
     }
-    int _asInt(dynamic v) {
+    int asInt(dynamic v) {
       if (v == null) return 0;
       if (v is int) return v;
       if (v is num) return v.toInt();
       if (v is String) return int.tryParse(v) ?? (double.tryParse(v)?.round() ?? 0);
       return 0;
     }
-    String _asString(dynamic v) => v == null ? '' : v.toString();
+    String asString(dynamic v) => v == null ? '' : v.toString();
 
     final ts = json['timestamp'];
     final DateTime parsedTs = ts is String && ts.isNotEmpty
@@ -53,15 +53,15 @@ class WeatherModel {
         : DateTime.now();
 
     return WeatherModel(
-      temperature: _asDouble(json['temperature']),
-      feelsLike: _asDouble(json['feelsLike']),
-      humidity: _asInt(json['humidity']),
-      windSpeed: _asDouble(json['windSpeed']),
-      windDirection: _asInt(json['windDirection']),
-      precipitation: _asDouble(json['precipitation']),
-      condition: _asString(json['condition']),
-      description: _asString(json['description']),
-      icon: _asString(json['icon']),
+      temperature: asDouble(json['temperature']),
+      feelsLike: asDouble(json['feelsLike']),
+      humidity: asInt(json['humidity']),
+      windSpeed: asDouble(json['windSpeed']),
+      windDirection: asInt(json['windDirection']),
+      precipitation: asDouble(json['precipitation']),
+      condition: asString(json['condition']),
+      description: asString(json['description']),
+      icon: asString(json['icon']),
       timestamp: parsedTs,
       location: Location.fromJson(json['location'] ?? {}),
       source: json['source'],

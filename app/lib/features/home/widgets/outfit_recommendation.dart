@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/home_providers.dart';
 import '../../../theme/app_theme.dart';
-import '../../../services/pinterest_api_service.dart';
 
 class OutfitRecommendation extends ConsumerStatefulWidget {
   const OutfitRecommendation({super.key});

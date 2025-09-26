@@ -31,6 +31,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _initializeData() async {
     // ChangeNotifierProvider는 .notifier가 아닌 인스턴스에 직접 호출
     await ref.read(weatherProvider).fetchCurrentWeather();
+    await ref.read(weatherProvider).fetchForecast();
 
     // Read the provider's state to check values.
     final userState = ref.read(userProvider);
@@ -48,6 +49,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _refreshData() async {
     // ChangeNotifierProvider는 .notifier가 아닌 인스턴스에 직접 호출
     await ref.read(weatherProvider).refreshWeather();
+    await ref.read(weatherProvider).fetchForecast();
 
     final userState = ref.read(userProvider);
     final weatherState = ref.read(weatherProvider);

@@ -209,8 +209,10 @@ class MockWeatherService implements WeatherService {
       location: Location(
         latitude: 37.5665,
         longitude: 126.9780,
-        city: 'Seoul',
-        country: 'KR',
+        city: '',
+        country: '',
+        district: '',
+        subLocality: '',
       ),
     );
   }
@@ -233,8 +235,10 @@ class MockWeatherService implements WeatherService {
         location: Location(
           latitude: 37.5665,
           longitude: 126.9780,
-          city: 'Seoul',
-          country: 'KR',
+          city: '',
+          country: '',
+          district: '',
+          subLocality: '',
         ),
       );
     });

@@ -17,13 +17,17 @@ class WeatherProvider with ChangeNotifier {
   bool get hasWeather => _currentWeather != null;
 
   Future<void> fetchCurrentWeather({bool force = false}) async {
+    print('WeatherProvider: fetchCurrentWeather called, force=$force');
     _setLoading(true);
     _clearError();
 
     try {
       _currentWeather = await serviceLocator.weatherService.getCurrentWeather(force: force);
+      print('WeatherProvider: weather data received: temperature=${_currentWeather?.temperature}, condition=${_currentWeather?.condition}');
+      print('WeatherProvider: weather source: ${_currentWeather?.source}, cached: ${_currentWeather?.cached}');
       notifyListeners();
     } catch (e) {
+      print('WeatherProvider: error fetching weather: $e');
       // More specific error messages for location-related issues
       String errorMessage = 'Failed to fetch weather data: ${e.toString()}';
       if (e.toString().contains('Location')) {
@@ -40,17 +44,16 @@ class WeatherProvider with ChangeNotifier {
   }
 
   Future<void> fetchForecast() async {
-    _setLoading(true);
-    _clearError();
-
+    // 예보 실패는 UI를 막지 않음 (비차단 처리)
     try {
-      // 백엔드 forecast 미구현: 현재값 1개로 대체
-      _forecast = await serviceLocator.weatherService.getForecast();
+      final result = await serviceLocator.weatherService.getForecast();
+      _forecast = result;
       notifyListeners();
     } catch (e) {
-      _setError('Failed to fetch forecast data: ${e.toString()}');
-    } finally {
-      _setLoading(false);
+      // 조용히 로그만 남기고, 현재 날씨 카드만 표시되도록 유지
+      if (kDebugMode) {
+        print('fetchForecast ignored error: $e');
+      }
     }
   }
 
@@ -59,7 +62,6 @@ class WeatherProvider with ChangeNotifier {
     _clearError();
     try {
       _currentWeather = await serviceLocator.weatherService.getCurrentWeather(force: force);
-      _forecast = [_currentWeather!];
       notifyListeners();
     } catch (e) {
       _setError('Failed to refresh weather: ${e.toString()}');
