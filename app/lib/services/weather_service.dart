@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import '../models/weather_model.dart';
@@ -22,29 +23,31 @@ class WeatherService {
   // Get current weather for user's location
   static Future<WeatherModel> getCurrentWeather() async {
     try {
-      // TODO: Replace with new WeatherService interface
-      // final weatherService = GetIt.instance<weather_interface.WeatherService>();
-      // return await weatherService.getCurrentWeather();
-      
       // Use the new location service
       final locationService = RealLocationService();
       final location = await locationService.getCurrentLocation();
       
-      // Make API call with location coordinates
+      // Make API call to backend server
+      // Use localhost for web, 10.0.2.2 for Android emulator
+      final baseUrl = kIsWeb ? 'http://localhost:4000' : 'http://10.0.2.2:4000';
       final url = Uri.parse(
-        'https://api.openweathermap.org/data/2.5/weather?lat=${location.latitude}&lon=${location.longitude}&appid=$_apiKey&units=metric&lang=kr'
+        '$baseUrl/api/weather/current?lat=${location.latitude}&lon=${location.longitude}'
       );
       
       final response = await http.get(url);
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return _parseWeatherDataFromLocation(data, location);
+        return _parseWeatherDataFromBackend(data, location);
       } else {
         throw Exception('Failed to load weather data: ${response.statusCode}');
       }
     } catch (e) {
       print('Weather API error: $e');
+      print('Error type: ${e.runtimeType}');
+      if (e is http.ClientException) {
+        print('HTTP Client Exception: ${e.message}');
+      }
       // Return mock data for development
       return _getMockWeatherData();
     }
@@ -53,31 +56,24 @@ class WeatherService {
   // Get weather for specific location
   static Future<WeatherModel> getWeatherForLocation(double lat, double lon) async {
     try {
-      // TODO: Replace with new WeatherService interface
-      // final weatherService = GetIt.instance<weather_interface.WeatherService>();
-      // return await weatherService.getWeatherForLocation(lat, lon);
-      
+      // Make API call to backend server
+      // Use localhost for web, 10.0.2.2 for Android emulator
+      final baseUrl = kIsWeb ? 'http://localhost:4000' : 'http://10.0.2.2:4000';
       final url = Uri.parse(
-        '$_baseUrl/weather?lat=$lat&lon=$lon&appid=$_apiKey&units=metric'
+        '$baseUrl/api/weather/current?lat=$lat&lon=$lon'
       );
       
       final response = await http.get(url);
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final position = Position(
+        final location = Location(
           latitude: lat,
           longitude: lon,
-          timestamp: DateTime.now(),
-          accuracy: 0,
-          altitude: 0,
-          altitudeAccuracy: 0,
-          heading: 0,
-          headingAccuracy: 0,
-          speed: 0,
-          speedAccuracy: 0,
+          city: data['location']?['city'] ?? 'Unknown',
+          country: data['location']?['country'] ?? 'Unknown',
         );
-        return _parseWeatherData(data, position);
+        return _parseWeatherDataFromBackend(data, location);
       } else {
         throw Exception('Failed to load weather data: ${response.statusCode}');
       }
@@ -134,6 +130,28 @@ class WeatherService {
         city: data['name'] ?? 'Unknown',
         country: data['sys']['country'] ?? 'Unknown',
       ),
+    );
+  }
+
+  static WeatherModel _parseWeatherDataFromBackend(Map<String, dynamic> data, Location location) {
+    return WeatherModel(
+      temperature: data['temperature']?.toDouble() ?? 0.0,
+      feelsLike: data['feelsLike']?.toDouble() ?? 0.0,
+      humidity: data['humidity']?.toInt() ?? 0,
+      windSpeed: data['windSpeed']?.toDouble() ?? 0.0,
+      windDirection: data['windDirection']?.toInt() ?? 0,
+      precipitation: data['precipitation']?.toDouble() ?? 0.0,
+      condition: data['condition'] ?? 'Unknown',
+      description: data['description'] ?? 'Unknown',
+      icon: data['icon'] ?? '',
+      timestamp: DateTime.tryParse(data['timestamp'] ?? '') ?? DateTime.now(),
+            location: Location(
+              latitude: location.latitude,
+              longitude: location.longitude,
+              city: data['location']?['city'] ?? location.city,
+              country: data['location']?['country'] ?? location.country,
+              district: data['location']?['district'],
+            ),
     );
   }
 

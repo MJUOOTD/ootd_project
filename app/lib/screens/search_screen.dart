@@ -10,6 +10,8 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String _selectedFilter = 'All';
+  List<String> _searchResults = [];
 
   @override
   void dispose() {
@@ -27,7 +29,7 @@ class _SearchScreenState extends State<SearchScreen> {
         title: const Text(
           'Search',
           style: TextStyle(
-            color: Color.fromARGB(239, 107, 141, 252),
+            color: const Color.fromARGB(239, 107, 141, 252),
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -41,13 +43,22 @@ class _SearchScreenState extends State<SearchScreen> {
             color: Colors.white,
             child: TextField(
               controller: _searchController,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+              ),
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
+                  _performSearch();
                 });
               },
               decoration: InputDecoration(
                 hintText: 'Search outfits, styles, brands...',
+                hintStyle: const TextStyle(
+                  color: Color(0xFF999999),
+                  fontSize: 16,
+                ),
                 prefixIcon: const Icon(Icons.search, color: Color(0xFF666666)),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -56,6 +67,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           _searchController.clear();
                           setState(() {
                             _searchQuery = '';
+                            _searchResults.clear();
                           });
                         },
                       )
@@ -79,17 +91,17 @@ class _SearchScreenState extends State<SearchScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildFilterChip('All', true),
+                  _buildFilterChip('All', _selectedFilter == 'All'),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Casual', false),
+                  _buildFilterChip('Casual', _selectedFilter == 'Casual'),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Work', false),
+                  _buildFilterChip('Work', _selectedFilter == 'Work'),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Formal', false),
+                  _buildFilterChip('Formal', _selectedFilter == 'Formal'),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Date', false),
+                  _buildFilterChip('Date', _selectedFilter == 'Date'),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Exercise', false),
+                  _buildFilterChip('Exercise', _selectedFilter == 'Exercise'),
                 ],
               ),
             ),
@@ -111,15 +123,86 @@ class _SearchScreenState extends State<SearchScreen> {
       label: Text(label),
       selected: isSelected,
       onSelected: (selected) {
-        // Handle filter selection
+        setState(() {
+          _selectedFilter = label;
+          _performSearch();
+        });
       },
       backgroundColor: const Color(0xFFF8F9FA),
-      selectedColor:const Color.fromARGB(239, 107, 141, 252),
+      selectedColor: const Color.fromARGB(239, 107, 141, 252),
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : const Color(0xFF666666),
         fontWeight: FontWeight.w500,
       ),
     );
+  }
+
+  void _performSearch() {
+    if (_searchQuery.isEmpty) {
+      setState(() {
+        _searchResults.clear();
+      });
+      return;
+    }
+
+    // Mock search results based on query and filter
+    List<String> mockResults = [];
+    String searchTerm = _searchQuery.toLowerCase();
+    
+    // Generate mock outfit URLs based on search query and filter
+    for (int i = 1; i <= 8; i++) {
+      String outfitType = _selectedFilter.toLowerCase();
+      if (outfitType == 'all') {
+        outfitType = ['casual', 'work', 'formal', 'date', 'exercise'][i % 5];
+      }
+      
+      // Mock Pexels-style URLs for different outfit types
+      String imageUrl = _getMockImageUrl(outfitType, i);
+      mockResults.add(imageUrl);
+    }
+    
+    setState(() {
+      _searchResults = mockResults;
+    });
+  }
+
+  String _getMockImageUrl(String outfitType, int index) {
+    // Mock URLs that simulate real outfit images
+    Map<String, List<String>> outfitImages = {
+      'casual': [
+        'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg',
+        'https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg',
+        'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg',
+        'https://images.pexels.com/photos/1040881/pexels-photo-1040881.jpeg',
+      ],
+      'work': [
+        'https://images.pexels.com/photos/1040882/pexels-photo-1040882.jpeg',
+        'https://images.pexels.com/photos/1040883/pexels-photo-1040883.jpeg',
+        'https://images.pexels.com/photos/1040884/pexels-photo-1040884.jpeg',
+        'https://images.pexels.com/photos/1040885/pexels-photo-1040885.jpeg',
+      ],
+      'formal': [
+        'https://images.pexels.com/photos/1040886/pexels-photo-1040886.jpeg',
+        'https://images.pexels.com/photos/1040887/pexels-photo-1040887.jpeg',
+        'https://images.pexels.com/photos/1040888/pexels-photo-1040888.jpeg',
+        'https://images.pexels.com/photos/1040889/pexels-photo-1040889.jpeg',
+      ],
+      'date': [
+        'https://images.pexels.com/photos/1040890/pexels-photo-1040890.jpeg',
+        'https://images.pexels.com/photos/1040891/pexels-photo-1040891.jpeg',
+        'https://images.pexels.com/photos/1040892/pexels-photo-1040892.jpeg',
+        'https://images.pexels.com/photos/1040893/pexels-photo-1040893.jpeg',
+      ],
+      'exercise': [
+        'https://images.pexels.com/photos/1040894/pexels-photo-1040894.jpeg',
+        'https://images.pexels.com/photos/1040895/pexels-photo-1040895.jpeg',
+        'https://images.pexels.com/photos/1040896/pexels-photo-1040896.jpeg',
+        'https://images.pexels.com/photos/1040897/pexels-photo-1040897.jpeg',
+      ],
+    };
+    
+    List<String> images = outfitImages[outfitType] ?? outfitImages['casual']!;
+    return images[index % images.length];
   }
 
   Widget _buildEmptyState() {
@@ -155,7 +238,38 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildSearchResults() {
-    // Mock search results
+    if (_searchResults.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 64,
+              color: Color(0xFF666666),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No results found',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF666666),
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Try different keywords or filters',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF999999),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -164,7 +278,7 @@ class _SearchScreenState extends State<SearchScreen> {
         mainAxisSpacing: 16,
         childAspectRatio: 0.75,
       ),
-      itemCount: 10, // Mock count
+      itemCount: _searchResults.length,
       itemBuilder: (context, index) {
         return Container(
           decoration: BoxDecoration(
@@ -185,14 +299,37 @@ class _SearchScreenState extends State<SearchScreen> {
                 flex: 3,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                   ),
-                  child: Center(
-                    child: Icon(
-                      Icons.image,
-                      size: 48,
-                      color:  const Color.fromARGB(239, 107, 141, 252),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                    child: Image.network(
+                      _searchResults[index],
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: Icon(
+                              Icons.image,
+                              size: 48,
+                              color: Color(0xFF666666),
+                            ),
+                          ),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: Color.fromARGB(239, 107, 141, 252),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -205,7 +342,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Outfit ${index + 1}',
+                        '${_selectedFilter} Outfit ${index + 1}',
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
@@ -215,7 +352,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Casual Style',
+                        '${_selectedFilter} Style',
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 12,

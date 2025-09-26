@@ -58,7 +58,7 @@ class HourlyRecommendationWidget extends StatelessWidget {
               height: 100,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: 8, // 현재 시간부터 8시간
+                itemCount: 20, // 현재 시간부터 20시간
                 itemBuilder: (context, index) {
                   final displayHour = (now.hour + index) % 24;
                   final timeSlot = _getTimeSlot(displayHour);
@@ -252,7 +252,7 @@ class HourlyRecommendationWidget extends StatelessWidget {
                         Text(weatherEmoji, style: const TextStyle(fontSize: 24)),
                         const SizedBox(width: 12),
                         Text(
-                          '$currentRecommendation - $temperature℃',
+                          '$currentRecommendation - ${temperature}℃',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -355,21 +355,6 @@ class HourlyRecommendationWidget extends StatelessWidget {
     );
   }
 
-  List<String> _getAlternativeOptions(int hour) {
-    final weatherEmoji = _getWeatherEmoji(hour);
-
-    if (weatherEmoji == '☔' || weatherEmoji == '🌧' || weatherEmoji == '🌦') {
-      return ['우산', '레인부츠', '방수재킷'];
-    } else if (weatherEmoji == '❄') {
-      return ['목도리', '장갑', '두꺼운 코트'];
-    } else if (weatherEmoji == '🌞' || weatherEmoji == '🌤') {
-      return ['모자', '자외선차단제', '시원한 옷'];
-    } else if (weatherEmoji == '⛅' || weatherEmoji == '☁') {
-      return ['가디건', '스웨터', '야상'];
-    } else {
-      return ['편한 옷', '실용적 옷차림', '계절 옷'];
-    }
-  }
 
   List<AlternativeOption> _getAlternativeOptionsWithDetails(int hour) {
     final weatherEmoji = _getWeatherEmoji(hour);

@@ -207,7 +207,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           onTap: _handleLogin,
                           child: const Center(
                             child: Text(
-                              '로그인하기',
+                              '로그인',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -250,7 +250,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           onTap: _handleSignup,
                           child: const Center(
                             child: Text(
-                              '회원가입하기',
+                              '회원가입',
                               style: TextStyle(
                                 color: Colors.black,
                                 fontSize: 16,

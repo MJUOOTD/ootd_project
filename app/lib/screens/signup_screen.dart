@@ -15,6 +15,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+  String _selectedTemperatureSensitivity = '보통';
+  bool _isDropdownOpen = false;
 
   @override
   void dispose() {
@@ -229,6 +231,85 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       ),
                     ),
                     
+                    const SizedBox(height: 20),
+                    
+                    // Temperature Sensitivity Selection
+                    const Text(
+                      '체온 민감도',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Dropdown Input Field
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isDropdownOpen = !_isDropdownOpen;
+                        });
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.thermostat,
+                              color: Colors.grey[500],
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              _selectedTemperatureSensitivity,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            const Spacer(),
+                            Icon(
+                              _isDropdownOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                              color: Colors.grey[500],
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    
+                    // Dropdown Options
+                    if (_isDropdownOpen) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            _buildDropdownOption('더위를 많이 탐', '평소보다 시원한 옷을 추천해드려요'),
+                            _buildDropdownOption('보통', '일반적인 날씨 기준으로 추천해드려요'),
+                            _buildDropdownOption('추위를 많이 탐', '평소보다 따뜻한 옷을 추천해드려요'),
+                          ],
+                        ),
+                      ),
+                    ],
+                    
                     const SizedBox(height: 32),
                     
                     // Signup Button
@@ -250,7 +331,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           onTap: _handleSignup,
                           child: const Center(
                             child: Text(
-                              '회원가입하기',
+                              '회원가입',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -293,7 +374,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           onTap: () => context.pop(),
                           child: const Center(
                             child: Text(
-                              '로그인하기',
+                              '로그인',
                               style: TextStyle(
                                 color: Colors.black,
                                 fontSize: 16,
@@ -309,6 +390,53 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownOption(String title, String subtitle) {
+    final isSelected = _selectedTemperatureSensitivity == title;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedTemperatureSensitivity = title;
+          _isDropdownOpen = false;
+        });
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            bottom: BorderSide(
+              color: Colors.grey[200]!,
+              width: 1,
+            ),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.black : Colors.grey[800],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 14,
+                color: isSelected ? Colors.grey[600] : Colors.grey[500],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -338,6 +466,29 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     // 간단한 회원가입 로직 (실제로는 Firebase Auth 등을 사용)
     final userProviderNotifier = ref.read(userProvider.notifier);
     
+    // 선택된 체온 민감도에 따른 설정값 계산
+    double coldSensitivity = 0.0;
+    double heatSensitivity = 0.0;
+    String level = 'normal';
+    
+    switch (_selectedTemperatureSensitivity) {
+      case '더위를 많이 탐':
+        coldSensitivity = 0.0;
+        heatSensitivity = 0.5;
+        level = 'heat_sensitive';
+        break;
+      case '보통':
+        coldSensitivity = 0.0;
+        heatSensitivity = 0.0;
+        level = 'normal';
+        break;
+      case '추위를 많이 탐':
+        coldSensitivity = 0.5;
+        heatSensitivity = 0.0;
+        level = 'cold_sensitive';
+        break;
+    }
+
     // 임시 사용자 생성 (실제로는 서버에서 인증)
     final user = userProviderNotifier.createUser(
       name: _idController.text,
@@ -347,9 +498,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       bodyType: '보통',
       activityLevel: '보통',
       temperatureSensitivity: TemperatureSensitivity(
-        coldSensitivity: 0.0,
-        heatSensitivity: 0.0,
-        level: 'normal',
+        coldSensitivity: coldSensitivity,
+        heatSensitivity: heatSensitivity,
+        level: level,
       ),
       stylePreferences: ['캐주얼', '깔끔한'],
       situationPreferences: {

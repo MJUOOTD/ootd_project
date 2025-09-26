@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app_router.dart';
-import 'services/service_locator.dart';
 import 'theme/app_theme.dart';
-import 'services/pinterest_api_service.dart';
+import 'services/pexels_api_service.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await serviceLocator.initialize();
-  // Pinterest API 토큰 설정
-  PinterestApiService.setAccessToken('pina_AMAUIXYXACCSOBIAGAAL4D4ZPUDHBGIBQBIQDALLUG7QUGPCODGPGIJ6CKB5YUODK277WHXLGEOIA6Y7IQBN3NYH75KLZCYA');
+void main() {
+  // Pexels API 키 설정
+  PexelsApiService.setApiKey('QwYk7NDUowPtA83vo1RHNYSHCWWnDTd8MNlm8giDiGq8blf1iPAHu1DP');
   
   runApp(const OOTDApp());
 }

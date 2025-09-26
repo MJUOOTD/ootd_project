@@ -12,8 +12,6 @@ class WeatherModel {
   final String icon;
   final DateTime timestamp;
   final Location location;
-  final String? source; // e.g., 'kma'
-  final bool? cached;   // whether response came from cache
 
   WeatherModel({
     required this.temperature,
@@ -27,45 +25,21 @@ class WeatherModel {
     required this.icon,
     required this.timestamp,
     required this.location,
-    this.source,
-    this.cached,
   });
 
   factory WeatherModel.fromJson(Map<String, dynamic> json) {
-    double _asDouble(dynamic v) {
-      if (v == null) return 0.0;
-      if (v is num) return v.toDouble();
-      if (v is String) return double.tryParse(v) ?? 0.0;
-      return 0.0;
-    }
-    int _asInt(dynamic v) {
-      if (v == null) return 0;
-      if (v is int) return v;
-      if (v is num) return v.toInt();
-      if (v is String) return int.tryParse(v) ?? (double.tryParse(v)?.round() ?? 0);
-      return 0;
-    }
-    String _asString(dynamic v) => v == null ? '' : v.toString();
-
-    final ts = json['timestamp'];
-    final DateTime parsedTs = ts is String && ts.isNotEmpty
-        ? (DateTime.tryParse(ts) ?? DateTime.now())
-        : DateTime.now();
-
     return WeatherModel(
-      temperature: _asDouble(json['temperature']),
-      feelsLike: _asDouble(json['feelsLike']),
-      humidity: _asInt(json['humidity']),
-      windSpeed: _asDouble(json['windSpeed']),
-      windDirection: _asInt(json['windDirection']),
-      precipitation: _asDouble(json['precipitation']),
-      condition: _asString(json['condition']),
-      description: _asString(json['description']),
-      icon: _asString(json['icon']),
-      timestamp: parsedTs,
+      temperature: (json['temperature'] ?? 0.0).toDouble(),
+      feelsLike: (json['feelsLike'] ?? 0.0).toDouble(),
+      humidity: json['humidity'] ?? 0,
+      windSpeed: (json['windSpeed'] ?? 0.0).toDouble(),
+      windDirection: json['windDirection'] ?? 0,
+      precipitation: (json['precipitation'] ?? 0.0).toDouble(),
+      condition: json['condition'] ?? '',
+      description: json['description'] ?? '',
+      icon: json['icon'] ?? '',
+      timestamp: DateTime.parse(json['timestamp'] ?? DateTime.now().toIso8601String()),
       location: Location.fromJson(json['location'] ?? {}),
-      source: json['source'],
-      cached: json['cached'],
     );
   }
 
@@ -82,8 +56,6 @@ class WeatherModel {
       'icon': icon,
       'timestamp': timestamp.toIso8601String(),
       'location': location.toJson(),
-      'source': source,
-      'cached': cached,
     };
   }
 
@@ -125,8 +97,7 @@ class Location {
   final double longitude;
   final String city;
   final String country;
-  final String? district;     // 구
-  final String? subLocality;  // 동
+  final String? district;
 
   Location({
     required this.latitude,
@@ -134,7 +105,6 @@ class Location {
     required this.city,
     required this.country,
     this.district,
-    this.subLocality,
   });
 
   factory Location.fromJson(Map<String, dynamic> json) {
@@ -144,7 +114,6 @@ class Location {
       city: json['city'] ?? '',
       country: json['country'] ?? '',
       district: json['district'],
-      subLocality: json['subLocality'],
     );
   }
 
@@ -155,8 +124,17 @@ class Location {
       'city': city,
       'country': country,
       'district': district,
-      'subLocality': subLocality,
     };
+  }
+
+  // Get formatted location string with district only
+  String get formattedLocation {
+    List<String> parts = [];
+    
+    if (city.isNotEmpty) parts.add(city);
+    if (district != null && district!.isNotEmpty) parts.add(district!);
+    
+    return parts.join(' ');
   }
 }
 

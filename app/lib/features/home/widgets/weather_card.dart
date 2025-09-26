@@ -181,6 +181,50 @@ class WeatherCard extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+
+          // Today's recommended outfit
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.blue.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.checkroom,
+                      color: Colors.blue[700],
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '오늘의 추천 착장',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: Colors.blue[700],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _getRecommendedOutfit(weather.temperature),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -295,9 +339,71 @@ class WeatherCard extends ConsumerWidget {
               color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
           ),
+          const SizedBox(height: 20),
+
+          // Today's recommended outfit (default for error case)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.blue.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.checkroom,
+                      color: Colors.blue[700],
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '오늘의 추천 착장',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: Colors.blue[700],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '기본 추천: 가디건 + 긴팔 + 청바지',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  String _getRecommendedOutfit(double temperature) {
+    if (temperature < 0) {
+      return '두꺼운 패딩 + 목도리 + 따뜻한 부츠';
+    } else if (temperature < 5) {
+      return '패딩 + 니트 + 긴바지';
+    } else if (temperature < 10) {
+      return '코트 + 스웨터 + 청바지';
+    } else if (temperature < 15) {
+      return '자켓 + 긴팔 + 슬랙스';
+    } else if (temperature < 20) {
+      return '가디건 + 긴팔 + 청바지';
+    } else if (temperature < 25) {
+      return '긴팔 + 반바지 또는 얇은 긴바지';
+    } else {
+      return '반팔 + 반바지 + 가벼운 신발';
+    }
   }
 }
 
