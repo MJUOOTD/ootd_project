@@ -1,5 +1,6 @@
 import 'location/location_service.dart';
 import 'weather/weather_service.dart';
+import 'weather/backend_weather_service.dart';
 
 /// Service locator for dependency injection
 /// 
@@ -22,28 +23,22 @@ class ServiceLocator {
 
   /// Get location service instance
   LocationService get locationService {
-    _locationService ??= MockLocationService();
+    _locationService ??= RealLocationService();
     return _locationService!;
   }
 
   /// Get weather service instance
   WeatherService get weatherService {
-    _weatherService ??= MockWeatherService();
+    _weatherService ??= BackendWeatherService();
     return _weatherService!;
   }
 
   /// Initialize all services
   /// This method should be called during app startup
   Future<void> initialize() async {
-    // TODO: Implement proper service initialization
-    // - Register services with dependency injection framework
-    // - Initialize services in correct order
-    // - Handle service initialization errors
-    // - Add service health checks
-    
-    // For now, just create mock instances
-    _locationService = MockLocationService();
-    _weatherService = MockWeatherService();
+    // Register real implementations
+    _locationService = RealLocationService();
+    _weatherService = BackendWeatherService();
   }
 
   /// Reset all services (useful for testing)

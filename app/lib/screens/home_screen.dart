@@ -4,9 +4,11 @@ import '../providers/weather_provider.dart';
 import '../providers/user_provider.dart';
 import '../providers/recommendation_provider.dart';
 import '../widgets/weather_widget.dart';
-import '../widgets/outfit_recommendation_widget.dart';
-import '../widgets/recommendation_message_widget.dart';
-import 'outfit_detail_screen.dart';
+import '../widgets/hourly_recommendation_widget.dart';
+import '../widgets/situation_recommendation_widget.dart';
+import 'notification_list_screen.dart';
+import 'cart_screen.dart';
+import '../widgets/feedback_modal.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -19,40 +21,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeData();
+    // It's safer to call this after the first frame is built.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeData();
+    });
   }
 
   Future<void> _initializeData() async {
-    final weatherProvider = ref.read(weatherProviderProvider.notifier);
-    final userProvider = ref.read(userProviderProvider.notifier);
-    final recommendationProvider = ref.read(recommendationProviderProvider.notifier);
+    // ChangeNotifierProvider는 .notifier가 아닌 인스턴스에 직접 호출
+    final weatherSvc = ref.read(weatherProvider);
+    await weatherSvc.fetchCurrentWeather();
+    if (!mounted) return;
 
-    // Fetch weather data
-    await weatherProvider.fetchCurrentWeather();
+    // Read the provider's state to check values.
+    final userState = ref.read(userProvider);
+    final weatherState = ref.read(weatherProvider);
 
-    // Generate recommendations if user is logged in and weather is available
-    if (userProvider.isLoggedIn && weatherProvider.hasWeather) {
-      await recommendationProvider.generateRecommendations(
-        weather: weatherProvider.currentWeather!,
-        user: userProvider.currentUser!,
+    // Check conditions using the state objects.
+    if (userState.isLoggedIn && weatherState.hasWeather) {
+      await ref.read(recommendationProvider.notifier).generateRecommendations(
+        weather: weatherState.currentWeather!,
+        user: userState.currentUser!,
       );
+      if (!mounted) return;
     }
   }
 
   Future<void> _refreshData() async {
-    final weatherProvider = ref.read(weatherProviderProvider.notifier);
-    final userProvider = ref.read(userProviderProvider.notifier);
-    final recommendationProvider = ref.read(recommendationProviderProvider.notifier);
+    // ChangeNotifierProvider는 .notifier가 아닌 인스턴스에 직접 호출
+    final weatherSvc = ref.read(weatherProvider);
+    await weatherSvc.refreshWeather();
+    if (!mounted) return;
 
-    // Refresh weather data
-    await weatherProvider.refreshWeather();
+    final userState = ref.read(userProvider);
+    final weatherState = ref.read(weatherProvider);
 
-    // Refresh recommendations
-    if (userProvider.isLoggedIn && weatherProvider.hasWeather) {
-      await recommendationProvider.refreshRecommendations(
-        weather: weatherProvider.currentWeather!,
-        user: userProvider.currentUser!,
+    if (userState.isLoggedIn && weatherState.hasWeather) {
+      await ref.read(recommendationProvider.notifier).refreshRecommendations(
+        weather: weatherState.currentWeather!,
+        user: userState.currentUser!,
       );
+      if (!mounted) return;
     }
   }
 
@@ -63,18 +72,76 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'OOTD',
-          style: TextStyle(
-            color: Color(0xFF030213),
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'OOTD',
+              style: TextStyle(
+                color: Color.fromARGB(239, 107, 141, 252),
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xFF030213)),
-            onPressed: _refreshData,
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined, color: Color.fromARGB(255, 225, 204, 126), size: 24),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationListScreen(),
+                    ),
+                  );
+                },
+              ),
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '3',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Consumer(
+            builder: (context, ref, child) {
+              final userState = ref.watch(userProvider);
+              return IconButton(
+                icon: const Icon(Icons.shopping_cart_outlined, color: Color.fromARGB(255, 75, 70, 70), size: 24),
+                onPressed: () {
+                  if (userState.isLoggedIn) {
+                    // 로그인된 경우: 장바구니 화면으로 이동
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const CartScreen(),
+                      ),
+                    );
+                  } else {
+                    // 로그인되지 않은 경우: 피드백 모달 표시
+                    FeedbackModal.show(context);
+                  }
+                },
+              );
+            },
           ),
         ],
       ),
@@ -82,16 +149,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onRefresh: _refreshData,
         child: Consumer(
           builder: (context, ref, child) {
-            final weatherProvider = ref.watch(weatherProviderProvider);
-            final userProvider = ref.watch(userProviderProvider);
-            final recommendationProvider = ref.watch(recommendationProviderProvider);
-            if (weatherProvider.isLoading) {
+            // Use `ref.watch` to get the state and rebuild on changes.
+            // Note the corrected provider names.
+            final weatherState = ref.watch(weatherProvider);
+            final userState = ref.watch(userProvider);
+            // final recommendationState = ref.watch(recommendationProvider);
+            if (weatherState.isLoading) {
               return const Center(
                 child: CircularProgressIndicator(),
               );
             }
 
-            if (weatherProvider.error != null) {
+            if (weatherState.error != null) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -103,7 +172,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Error: ${weatherProvider.error}',
+                      'Error: ${weatherState.error}',
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.red),
                     ),
@@ -123,28 +192,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Greeting
-                  _buildGreeting(userProvider.currentUser),
+                  // Pass state properties to widgets.
+                  _buildGreeting(userState.currentUser),
                   
                   const SizedBox(height: 24),
                   
-                  // Weather Widget
-                  if (weatherProvider.hasWeather)
-                    WeatherWidget(weather: weatherProvider.currentWeather!),
+                  if (weatherState.hasWeather)
+                    WeatherWidget(
+                      weather: weatherState.currentWeather!,
+                      onRefresh: _refreshData,
+                    ),
                   
                   const SizedBox(height: 24),
                   
-                  // Recommendation Message
-                  if (weatherProvider.hasWeather)
-                    RecommendationMessageWidget(weather: weatherProvider.currentWeather!),
+                  const HourlyRecommendationWidget(),
                   
                   const SizedBox(height: 24),
                   
-                  // Outfit Recommendations
-                  if (userProvider.isLoggedIn)
-                    _buildRecommendationsSection(recommendationProvider)
-                  else
-                    _buildLoginPrompt(),
+                  const SituationRecommendationWidget(),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Today's Recommendations section removed
                 ],
               ),
             );
@@ -154,7 +223,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildGreeting(user) {
+  Widget _buildGreeting(dynamic user) { // Using dynamic for user model type safety
     final time = DateTime.now().hour;
     String greeting;
     
@@ -188,143 +257,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildRecommendationsSection(RecommendationProvider recommendationProvider) {
-    if (recommendationProvider.isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
 
-    if (recommendationProvider.error != null) {
-      return Center(
-        child: Column(
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 8),
-            Text('Error: ${recommendationProvider.error}'),
-          ],
-        ),
-      );
-    }
-
-    if (!recommendationProvider.hasRecommendations) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: Text('No recommendations available'),
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Today\'s Recommendations',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF030213),
-          ),
-        ),
-        const SizedBox(height: 16),
-        OutfitRecommendationWidget(
-          recommendation: recommendationProvider.selectedRecommendation!,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => OutfitDetailScreen(
-                  recommendation: recommendationProvider.selectedRecommendation!,
-                ),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 16),
-        _buildRecommendationControls(recommendationProvider),
-      ],
-    );
-  }
-
-  Widget _buildRecommendationControls(RecommendationProvider recommendationProvider) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: recommendationProvider.previousRecommendation,
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF030213),
-          ),
-        ),
-        Text(
-          '${recommendationProvider.recommendations.indexOf(recommendationProvider.selectedRecommendation!) + 1} of ${recommendationProvider.recommendations.length}',
-          style: const TextStyle(
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF666666),
-          ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.arrow_forward_ios),
-          onPressed: recommendationProvider.nextRecommendation,
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF030213),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoginPrompt() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.person_outline,
-            size: 48,
-            color: Color(0xFF030213),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Complete your profile to get personalized outfit recommendations',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: Color(0xFF666666),
-            ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              // Navigate to settings/profile
-              Navigator.of(context).pushNamed('/settings');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF030213),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-            ),
-            child: const Text('Complete Profile'),
-          ),
-        ],
-      ),
-    );
-  }
 }

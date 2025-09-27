@@ -42,7 +42,7 @@ class SettingsProvider extends StateNotifier<SettingsState> {
     if (user != null) {
       state = state.copyWith(
         selectedGender: user.gender,
-        selectedSensitivity: user.temperatureSensitivity.level,
+        selectedSensitivity: user.temperatureSensitivity.name,
       );
     }
   }
@@ -61,7 +61,7 @@ class SettingsProvider extends StateNotifier<SettingsState> {
   bool hasChanges(UserModel? user) {
     if (user == null) return false;
     return state.selectedGender != user.gender || 
-           state.selectedSensitivity != user.temperatureSensitivity.level;
+           state.selectedSensitivity != user.temperatureSensitivity.name;
   }
 
   // Check if form is valid
@@ -72,7 +72,7 @@ class SettingsProvider extends StateNotifier<SettingsState> {
     if (user != null) {
       state = state.copyWith(
         selectedGender: user.gender,
-        selectedSensitivity: user.temperatureSensitivity.level,
+        selectedSensitivity: user.temperatureSensitivity.name,
         error: null,
       );
     } else {
@@ -84,28 +84,20 @@ class SettingsProvider extends StateNotifier<SettingsState> {
     }
   }
 
-  // Convert sensitivity level to TemperatureSensitivity object
+  // Convert sensitivity level to TemperatureSensitivity enum
   TemperatureSensitivity _convertSensitivityToModel(String level) {
     switch (level) {
-      case 'low':
-        return TemperatureSensitivity(
-          coldSensitivity: 0.5,
-          heatSensitivity: 0.5,
-          level: 'low',
-        );
-      case 'high':
-        return TemperatureSensitivity(
-          coldSensitivity: -0.5,
-          heatSensitivity: -0.5,
-          level: 'high',
-        );
+      case 'veryCold':
+        return TemperatureSensitivity.veryCold;
+      case 'cold':
+        return TemperatureSensitivity.cold;
+      case 'hot':
+        return TemperatureSensitivity.hot;
+      case 'veryHot':
+        return TemperatureSensitivity.veryHot;
       case 'normal':
       default:
-        return TemperatureSensitivity(
-          coldSensitivity: 0.0,
-          heatSensitivity: 0.0,
-          level: 'normal',
-        );
+        return TemperatureSensitivity.normal;
     }
   }
 

@@ -271,10 +271,33 @@ class OutfitDetailScreen extends StatelessWidget {
           
           const SizedBox(height: 16),
           
-          ...recommendation.outfit.items.map((item) => _buildClothingItem(item)),
+          ...recommendation.outfit.items.map((item) => _buildClothingItem(_stringToOutfitItem(item))),
         ],
       ),
     );
+  }
+
+  OutfitItem _stringToOutfitItem(String itemString) {
+    return OutfitItem(
+      id: itemString.hashCode.toString(),
+      name: itemString,
+      category: _getCategoryFromItem(itemString),
+      color: '기본',
+      size: 'M',
+      brand: '브랜드',
+      imageUrl: 'https://via.placeholder.com/200x200?text=$itemString',
+      price: 0.0,
+      tags: [itemString],
+    );
+  }
+
+  String _getCategoryFromItem(String item) {
+    if (item.contains('shirt') || item.contains('blouse')) return '상의';
+    if (item.contains('pants') || item.contains('jeans')) return '하의';
+    if (item.contains('jacket') || item.contains('coat')) return '아우터';
+    if (item.contains('shoes') || item.contains('boots')) return '신발';
+    if (item.contains('hat') || item.contains('cap')) return '모자';
+    return '기타';
   }
 
   Widget _buildClothingItem(ClothingItem item) {

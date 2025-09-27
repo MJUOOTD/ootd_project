@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../models/user_model.dart';
 import '../../providers/user_provider.dart';
 import 'providers/settings_providers.dart';
 
@@ -15,23 +16,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final userProvider = ref.read(userProviderProvider.notifier);
-      ref.read(settingsProviderProvider.notifier).initialize(userProvider.currentUser);
+      final userNotifier = ref.read(userProvider.notifier);
+      ref.read(settingsProviderProvider.notifier).initialize(userNotifier.currentUser);
     });
   }
 
   Future<void> _saveSettings() async {
-    final userProvider = ref.read(userProviderProvider.notifier);
-    final settingsProvider = ref.read(settingsProviderProvider.notifier);
-    final currentUser = userProvider.currentUser;
+    final userNotifier = ref.read(userProvider.notifier);
+    final settingsNotifier = ref.read(settingsProviderProvider.notifier);
+    final currentUser = userNotifier.currentUser;
     
     if (currentUser == null) return;
 
-    final updatedUser = settingsProvider.getUpdatedUser(currentUser);
+    final updatedUser = settingsNotifier.getUpdatedUser(currentUser);
     if (updatedUser == null) return;
 
     try {
-      await userProvider.updateUser(updatedUser);
+      await userNotifier.updateUser(updatedUser);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -57,9 +58,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = ref.watch(userProviderProvider);
-    final user = userProvider.currentUser;
-    final settingsProvider = ref.watch(settingsProviderProvider);
+    final userState = ref.watch(userProvider);
+    final user = userState.currentUser;
+    // final settingsProvider = ref.watch(settingsProviderProvider);
     
     return Scaffold(
       appBar: AppBar(
@@ -112,7 +113,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildProfileCard(user) {
+  Widget _buildProfileCard(UserModel user) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -235,7 +236,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildSaveButton(user) {
+  Widget _buildSaveButton(UserModel user) {
     final settingsProvider = ref.watch(settingsProviderProvider);
     final settingsNotifier = ref.read(settingsProviderProvider.notifier);
     final hasChanges = settingsNotifier.hasChanges(user);

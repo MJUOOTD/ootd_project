@@ -48,26 +48,39 @@ class RecommendationService {
     // Combine all items
     List<String> allItems = [...adjustedItems, ...genderItems, ...occasionItems];
     
-    // Remove duplicates and generate outfit recommendations
-    Set<String> uniqueItems = allItems.toSet();
-    
+    // Generate recommendations
     for (int i = 0; i < limit; i++) {
-      OutfitRecommendation recommendation = await _generateOutfitRecommendation(
-        uniqueItems.toList(),
+      recommendations.add(_generateOutfitRecommendation(
+        allItems,
         weather,
         user,
         occasion,
         i,
-      );
-      recommendations.add(recommendation);
+      ));
     }
 
     return recommendations;
   }
 
   static List<String> _getWeatherBasedItems(WeatherModel weather) {
-    WeatherCategory category = weather.getWeatherCategory();
-    return _weatherOutfitMapping[category] ?? _weatherOutfitMapping[WeatherCategory.mild]!;
+    WeatherCategory category = _getWeatherCategory(weather.temperature, weather.condition);
+    return _weatherOutfitMapping[category] ?? [];
+  }
+
+  static WeatherCategory _getWeatherCategory(double temperature, String condition) {
+    if (condition.toLowerCase().contains('rain')) {
+      return WeatherCategory.rainy;
+    }
+    
+    if (temperature < 5) {
+      return WeatherCategory.cold;
+    } else if (temperature < 15) {
+      return WeatherCategory.cool;
+    } else if (temperature < 25) {
+      return WeatherCategory.mild;
+    } else {
+      return WeatherCategory.hot;
+    }
   }
 
   static List<String> _adjustForUserSensitivity(
@@ -77,205 +90,244 @@ class RecommendationService {
   ) {
     List<String> adjustedItems = List.from(baseItems);
     
-    // Adjust for cold sensitivity
-    if (sensitivity.coldSensitivity < -0.3) {
-      adjustedItems.addAll(['extra_layer', 'scarf', 'gloves']);
-    } else if (sensitivity.coldSensitivity > 0.3) {
-      adjustedItems.removeWhere((item) => ['scarf', 'gloves', 'heavy_coat'].contains(item));
-    }
-    
-    // Adjust for heat sensitivity
-    if (sensitivity.heatSensitivity < -0.3) {
-      adjustedItems.addAll(['light_fabric', 'breathable_material']);
-      adjustedItems.removeWhere((item) => ['heavy_coat', 'sweater'].contains(item));
-    }
-    
-    // Adjust for actual temperature
-    double adjustedTemp = weather.getAdjustedTemperature(sensitivity);
-    if (adjustedTemp < 10) {
-      adjustedItems.addAll(['thermal_layer', 'heavy_coat']);
-    } else if (adjustedTemp > 30) {
-      adjustedItems.addAll(['light_material', 'sun_hat']);
+    switch (sensitivity) {
+      case TemperatureSensitivity.veryCold:
+        if (weather.temperature < 20) {
+          adjustedItems.addAll(['thermal_underwear', 'thick_socks', 'warm_hat']);
+        }
+        break;
+      case TemperatureSensitivity.cold:
+        if (weather.temperature < 18) {
+          adjustedItems.addAll(['light_sweater', 'long_sleeve']);
+        }
+        break;
+      case TemperatureSensitivity.normal:
+        // No adjustment needed
+        break;
+      case TemperatureSensitivity.hot:
+        if (weather.temperature > 22) {
+          adjustedItems.removeWhere((item) => 
+            item.contains('sweater') || item.contains('jacket'));
+          adjustedItems.addAll(['tank_top', 'shorts']);
+        }
+        break;
+      case TemperatureSensitivity.veryHot:
+        if (weather.temperature > 20) {
+          adjustedItems.removeWhere((item) => 
+            item.contains('sweater') || item.contains('jacket') || item.contains('long_sleeve'));
+          adjustedItems.addAll(['tank_top', 'shorts', 'light_fabric']);
+        }
+        break;
     }
     
     return adjustedItems;
   }
 
   static List<String> _getGenderSpecificItems(String gender) {
-    return _genderOutfitMapping[gender.toLowerCase()] ?? _genderOutfitMapping['male']!;
+    return _genderOutfitMapping[gender.toLowerCase()] ?? [];
   }
 
   static List<String> _getOccasionSpecificItems(String occasion) {
-    return _occasionOutfitMapping[occasion.toLowerCase()] ?? _occasionOutfitMapping['casual']!;
+    return _occasionOutfitMapping[occasion.toLowerCase()] ?? [];
   }
 
-  static Future<OutfitRecommendation> _generateOutfitRecommendation(
+  static OutfitRecommendation _generateOutfitRecommendation(
     List<String> items,
     WeatherModel weather,
     UserModel user,
     String occasion,
-    int variation,
-  ) async {
-    // Create mock outfit data
-    OutfitModel outfit = OutfitModel(
-      id: 'outfit_${DateTime.now().millisecondsSinceEpoch}_$variation',
-      title: _generateOutfitTitle(weather, occasion, variation),
-      description: _generateOutfitDescription(items, weather),
-      items: _createClothingItems(items, variation),
-      suitableWeather: weather.getWeatherCategory(),
-      gender: user.gender,
+    int index,
+  ) {
+    // Shuffle items for variety
+    List<String> shuffledItems = List.from(items)..shuffle();
+    
+    // Take first 5-7 items for the outfit
+    int itemCount = 5 + (index % 3);
+    List<String> outfitItems = shuffledItems.take(itemCount).toList();
+    
+    final outfit = Outfit(
+      title: _generateOutfitTitle(occasion, index),
+      description: _generateDescription(outfitItems, weather, occasion),
       occasion: occasion,
-      imageUrl: _getOutfitImageUrl(weather, occasion, variation),
-      rating: 4.0 + (variation * 0.1),
-      tags: _generateTags(items, weather, occasion),
-      createdAt: DateTime.now(),
+      rating: 3.5 + (index % 3) * 0.5,
+      items: outfitItems,
+      tags: _generateTags(occasion, weather),
+      imageUrl: _getOutfitImageUrl(outfitItems, occasion),
     );
-
+    
     return OutfitRecommendation(
+      id: 'outfit_${DateTime.now().millisecondsSinceEpoch}_$index',
       outfit: outfit,
-      confidence: _calculateConfidence(weather, user, items),
-      reason: _generateReason(weather, user, occasion),
-      tips: _generateTips(weather, items),
-      recommendedAt: DateTime.now(),
+      weather: weather,
+      confidence: _calculateConfidence(weather, user, occasion),
+      reason: _generateReason(weather, occasion),
+      tips: _generateTips(occasion, weather),
     );
   }
 
-  static String _generateOutfitTitle(WeatherModel weather, String occasion, int variation) {
-    List<String> titles = [
-      'Perfect for ${weather.condition.toLowerCase()} weather',
-      'Stylish ${occasion} look',
-      'Comfortable ${weather.getWeatherCategory().name} outfit',
-      'Trendy ${occasion} ensemble',
-    ];
-    return titles[variation % titles.length];
-  }
-
-  static String _generateOutfitDescription(List<String> items, WeatherModel weather) {
-    return 'A comfortable outfit perfect for ${weather.condition.toLowerCase()} weather. '
-           'This combination includes ${items.take(3).join(', ')} and more.';
-  }
-
-  static List<ClothingItem> _createClothingItems(List<String> items, int variation) {
-    return items.take(5).map((item) => ClothingItem(
-      id: 'item_${item}_$variation',
-      name: _formatItemName(item),
-      category: _getItemCategory(item),
-      subcategory: _getItemSubcategory(item),
-      color: _getRandomColor(),
-      material: _getRandomMaterial(),
-      brand: _getRandomBrand(),
-      price: _getRandomPrice(),
-      imageUrl: _getItemImageUrl(item),
-      warmthLevel: _getWarmthLevel(item),
-      season: _getSeason(item),
-    )).toList();
-  }
-
-  static String _getOutfitImageUrl(WeatherModel weather, String occasion, int variation) {
-    // Mock image URLs - in real app, these would be actual outfit images
-    return 'https://via.placeholder.com/300x400/cccccc/666666?text=${weather.condition}+$occasion+$variation';
-  }
-
-  static List<String> _generateTags(List<String> items, WeatherModel weather, String occasion) {
-    List<String> tags = [weather.condition.toLowerCase(), occasion, weather.getWeatherCategory().name];
-    tags.addAll(items.take(3));
-    return tags;
-  }
-
-  static double _calculateConfidence(WeatherModel weather, UserModel user, List<String> items) {
+  static double _calculateConfidence(WeatherModel weather, UserModel user, String occasion) {
     double confidence = 0.8; // Base confidence
     
-    // Adjust based on weather match
-    if (weather.getWeatherCategory() == WeatherCategory.mild) {
+    // Adjust based on weather accuracy
+    if (weather.temperature > 0 && weather.temperature < 50) {
       confidence += 0.1;
     }
     
     // Adjust based on user preferences
-    if (user.stylePreferences.isNotEmpty) {
+    if (user.temperatureSensitivity == TemperatureSensitivity.normal) {
+      confidence += 0.05;
+    }
+    
+    // Adjust based on occasion
+    if (['work', 'casual', 'date'].contains(occasion.toLowerCase())) {
       confidence += 0.05;
     }
     
     return confidence.clamp(0.0, 1.0);
   }
 
-  static String _generateReason(WeatherModel weather, UserModel user, String occasion) {
-    return 'Recommended based on current ${weather.condition.toLowerCase()} weather, '
-           'your temperature sensitivity (${user.temperatureSensitivity.level}), '
-           'and the ${occasion} occasion.';
+  static String _generateDescription(List<String> items, WeatherModel weather, String occasion) {
+    String baseDescription = 'Perfect for $occasion';
+    
+    if (weather.temperature < 10) {
+      baseDescription += ' in cold weather';
+    } else if (weather.temperature > 25) {
+      baseDescription += ' in warm weather';
+    } else {
+      baseDescription += ' in mild weather';
+    }
+    
+    return baseDescription;
   }
 
-  static List<String> _generateTips(WeatherModel weather, List<String> items) {
+  static String _getOutfitImageUrl(List<String> items, String occasion) {
+    // This would typically return a URL to an outfit image
+    // For now, return a placeholder
+    return 'https://via.placeholder.com/300x400?text=${occasion.toUpperCase()}';
+  }
+
+  static String _generateOutfitTitle(String occasion, int index) {
+    final titles = {
+      'work': ['Professional Look', 'Business Attire', 'Office Style'],
+      'casual': ['Casual Chic', 'Weekend Look', 'Relaxed Style'],
+      'date': ['Romantic Outfit', 'Date Night Look', 'Elegant Style'],
+      'exercise': ['Athletic Wear', 'Gym Look', 'Sporty Style'],
+      'formal': ['Formal Attire', 'Elegant Look', 'Sophisticated Style'],
+    };
+    
+    final occasionTitles = titles[occasion.toLowerCase()] ?? ['Fashion Look', 'Style Outfit'];
+    return occasionTitles[index % occasionTitles.length];
+  }
+
+  static List<String> _generateTags(String occasion, WeatherModel weather) {
+    List<String> tags = [occasion.toLowerCase()];
+    
+    if (weather.temperature < 10) {
+      tags.addAll(['winter', 'warm', 'layered']);
+    } else if (weather.temperature > 25) {
+      tags.addAll(['summer', 'light', 'breathable']);
+    } else {
+      tags.addAll(['spring', 'autumn', 'versatile']);
+    }
+    
+    if (weather.condition.toLowerCase().contains('rain')) {
+      tags.add('waterproof');
+    }
+    
+    return tags;
+  }
+
+  static String _generateReason(WeatherModel weather, String occasion) {
+    String reason = 'Perfect for $occasion';
+    
+    if (weather.temperature < 10) {
+      reason += ' in cold weather';
+    } else if (weather.temperature > 25) {
+      reason += ' in warm weather';
+    } else {
+      reason += ' in mild weather';
+    }
+    
+    if (weather.condition.toLowerCase().contains('rain')) {
+      reason += ' with rain protection';
+    }
+    
+    return reason;
+  }
+
+  static List<String> _generateTips(String occasion, WeatherModel weather) {
     List<String> tips = [];
     
-    if (weather.windSpeed > 5) {
-      tips.add('It\'s windy today, consider a windbreaker or secure your hat.');
+    if (occasion.toLowerCase() == 'work') {
+      tips.add('Choose neutral colors for a professional look');
+      tips.add('Ensure clothes are well-fitted and clean');
+    } else if (occasion.toLowerCase() == 'date') {
+      tips.add('Dress one level up from the venue');
+      tips.add('Choose colors that complement your skin tone');
+    } else if (occasion.toLowerCase() == 'casual') {
+      tips.add('Mix and match different textures');
+      tips.add('Express your personal style');
     }
     
-    if (weather.precipitation > 0) {
-      tips.add('Don\'t forget an umbrella or rain jacket.');
-    }
-    
-    if (weather.temperature > 25) {
-      tips.add('Stay hydrated and wear light colors to stay cool.');
+    if (weather.temperature < 15) {
+      tips.add('Layer your clothing for warmth and style');
+    } else if (weather.temperature > 25) {
+      tips.add('Choose light, breathable fabrics');
     }
     
     return tips;
   }
 
-  // Helper methods for mock data generation
-  static String _formatItemName(String item) {
-    return item.split('_').map((word) => word[0].toUpperCase() + word.substring(1)).join(' ');
+  // Helper method to get outfit suggestions for specific situations
+  static List<String> getOutfitSuggestions({
+    required String occasion,
+    required double temperature,
+    required String gender,
+  }) {
+    List<String> suggestions = [];
+    
+    // Add occasion-specific items
+    suggestions.addAll(_getOccasionSpecificItems(occasion));
+    
+    // Add weather-appropriate items
+    WeatherCategory category = _getWeatherCategory(temperature, '');
+    suggestions.addAll(_weatherOutfitMapping[category] ?? []);
+    
+    // Add gender-specific items
+    suggestions.addAll(_getGenderSpecificItems(gender));
+    
+    return suggestions.toSet().toList(); // Remove duplicates
   }
 
-  static String _getItemCategory(String item) {
-    if (item.contains('shirt') || item.contains('blouse')) return 'top';
-    if (item.contains('pants') || item.contains('jeans') || item.contains('shorts')) return 'bottom';
-    if (item.contains('jacket') || item.contains('coat')) return 'outerwear';
-    if (item.contains('shoes') || item.contains('boots')) return 'shoes';
-    return 'accessories';
-  }
-
-  static String _getItemSubcategory(String item) {
-    return item; // For simplicity, use the item name as subcategory
-  }
-
-  static String _getRandomColor() {
-    List<String> colors = ['Black', 'White', 'Blue', 'Gray', 'Navy', 'Brown', 'Green', 'Red'];
-    return colors[DateTime.now().millisecond % colors.length];
-  }
-
-  static String _getRandomMaterial() {
-    List<String> materials = ['Cotton', 'Polyester', 'Wool', 'Denim', 'Linen', 'Silk'];
-    return materials[DateTime.now().millisecond % materials.length];
-  }
-
-  static String _getRandomBrand() {
-    List<String> brands = ['Uniqlo', 'H&M', 'Zara', 'Nike', 'Adidas', 'Gap'];
-    return brands[DateTime.now().millisecond % brands.length];
-  }
-
-  static double _getRandomPrice() {
-    return (20 + (DateTime.now().millisecond % 200)).toDouble();
-  }
-
-  static String _getItemImageUrl(String item) {
-    return 'https://via.placeholder.com/150x150/cccccc/666666?text=$item';
-  }
-
-  static double _getWarmthLevel(String item) {
-    if (item.contains('heavy') || item.contains('thermal')) return 0.9;
-    if (item.contains('coat') || item.contains('sweater')) return 0.7;
-    if (item.contains('jacket') || item.contains('cardigan')) return 0.5;
-    if (item.contains('shirt') || item.contains('blouse')) return 0.3;
-    if (item.contains('t_shirt') || item.contains('shorts')) return 0.1;
-    return 0.5;
-  }
-
-  static String _getSeason(String item) {
-    if (item.contains('heavy') || item.contains('thermal') || item.contains('coat')) return 'winter';
-    if (item.contains('jacket') || item.contains('cardigan')) return 'fall';
-    if (item.contains('shirt') || item.contains('blouse')) return 'spring';
-    if (item.contains('t_shirt') || item.contains('shorts')) return 'summer';
-    return 'all';
+  // Helper method to get style tips
+  static List<String> getStyleTips({
+    required String occasion,
+    required double temperature,
+  }) {
+    List<String> tips = [];
+    
+    if (occasion.toLowerCase() == 'work') {
+      tips.add('Choose neutral colors for a professional look');
+      tips.add('Ensure clothes are well-fitted and clean');
+      tips.add('Accessorize with a watch or simple jewelry');
+    } else if (occasion.toLowerCase() == 'date') {
+      tips.add('Dress one level up from the venue');
+      tips.add('Choose colors that complement your skin tone');
+      tips.add('Don\'t forget to wear comfortable shoes');
+    } else if (occasion.toLowerCase() == 'casual') {
+      tips.add('Mix and match different textures');
+      tips.add('Layer for versatility');
+      tips.add('Express your personal style');
+    }
+    
+    if (temperature < 15) {
+      tips.add('Layer your clothing for warmth and style');
+      tips.add('Choose fabrics like wool or fleece');
+    } else if (temperature > 25) {
+      tips.add('Choose light, breathable fabrics');
+      tips.add('Wear light colors to reflect heat');
+    }
+    
+    return tips;
   }
 }

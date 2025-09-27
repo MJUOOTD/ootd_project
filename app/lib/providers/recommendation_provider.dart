@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/outfit_model.dart';
 import '../models/user_model.dart';
 import '../models/weather_model.dart';
@@ -159,3 +160,5 @@ class RecommendationProvider with ChangeNotifier {
     _error = null;
   }
 }
+
+final recommendationProvider = ChangeNotifierProvider((ref) => RecommendationProvider());

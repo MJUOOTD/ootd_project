@@ -1,110 +1,161 @@
 import 'weather_model.dart';
 
-class OutfitModel {
+class OutfitRecommendation {
   final String id;
-  final String title;
-  final String description;
-  final List<ClothingItem> items;
-  final WeatherCategory suitableWeather;
-  final String gender;
-  final String occasion;
-  final String imageUrl;
-  final double rating;
-  final List<String> tags;
-  final DateTime createdAt;
+  final Outfit outfit;
+  final WeatherModel weather;
+  final double confidence;
+  final String reason;
+  final List<String> tips;
 
-  OutfitModel({
+  OutfitRecommendation({
     required this.id,
-    required this.title,
-    required this.description,
-    required this.items,
-    required this.suitableWeather,
-    required this.gender,
-    required this.occasion,
-    required this.imageUrl,
-    required this.rating,
-    required this.tags,
-    required this.createdAt,
+    required this.outfit,
+    required this.weather,
+    required this.confidence,
+    required this.reason,
+    required this.tips,
   });
 
-  factory OutfitModel.fromJson(Map<String, dynamic> json) {
-    return OutfitModel(
+  factory OutfitRecommendation.fromJson(Map<String, dynamic> json) {
+    return OutfitRecommendation(
       id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      items: (json['items'] as List?)
-          ?.map((item) => ClothingItem.fromJson(item))
-          .toList() ?? [],
-      suitableWeather: WeatherCategory.values.firstWhere(
-        (e) => e.name == json['suitableWeather'],
-        orElse: () => WeatherCategory.mild,
-      ),
-      gender: json['gender'] ?? '',
-      occasion: json['occasion'] ?? '',
-      imageUrl: json['imageUrl'] ?? '',
-      rating: (json['rating'] ?? 0.0).toDouble(),
-      tags: List<String>.from(json['tags'] ?? []),
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      outfit: Outfit.fromJson(json['outfit'] ?? {}),
+      weather: WeatherModel.fromJson(json['weather'] ?? {}),
+      confidence: (json['confidence'] ?? 0.0).toDouble(),
+      reason: json['reason'] ?? '',
+      tips: List<String>.from(json['tips'] ?? []),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'title': title,
-      'description': description,
-      'items': items.map((item) => item.toJson()).toList(),
-      'suitableWeather': suitableWeather.name,
-      'gender': gender,
-      'occasion': occasion,
-      'imageUrl': imageUrl,
-      'rating': rating,
-      'tags': tags,
-      'createdAt': createdAt.toIso8601String(),
+      'outfit': outfit.toJson(),
+      'weather': weather.toJson(),
+      'confidence': confidence,
+      'reason': reason,
+      'tips': tips,
     };
+  }
+
+  OutfitRecommendation copyWith({
+    String? id,
+    Outfit? outfit,
+    WeatherModel? weather,
+    double? confidence,
+    String? reason,
+    List<String>? tips,
+  }) {
+    return OutfitRecommendation(
+      id: id ?? this.id,
+      outfit: outfit ?? this.outfit,
+      weather: weather ?? this.weather,
+      confidence: confidence ?? this.confidence,
+      reason: reason ?? this.reason,
+      tips: tips ?? this.tips,
+    );
   }
 }
 
-class ClothingItem {
+class Outfit {
+  final String title;
+  final String description;
+  final String occasion;
+  final double rating;
+  final List<String> items;
+  final List<String> tags;
+  final String imageUrl;
+
+  Outfit({
+    required this.title,
+    required this.description,
+    required this.occasion,
+    required this.rating,
+    required this.items,
+    required this.tags,
+    required this.imageUrl,
+  });
+
+  factory Outfit.fromJson(Map<String, dynamic> json) {
+    return Outfit(
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      occasion: json['occasion'] ?? '',
+      rating: (json['rating'] ?? 0.0).toDouble(),
+      items: List<String>.from(json['items'] ?? []),
+      tags: List<String>.from(json['tags'] ?? []),
+      imageUrl: json['imageUrl'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'description': description,
+      'occasion': occasion,
+      'rating': rating,
+      'items': items,
+      'tags': tags,
+      'imageUrl': imageUrl,
+    };
+  }
+
+  Outfit copyWith({
+    String? title,
+    String? description,
+    String? occasion,
+    double? rating,
+    List<String>? items,
+    List<String>? tags,
+    String? imageUrl,
+  }) {
+    return Outfit(
+      title: title ?? this.title,
+      description: description ?? this.description,
+      occasion: occasion ?? this.occasion,
+      rating: rating ?? this.rating,
+      items: items ?? this.items,
+      tags: tags ?? this.tags,
+      imageUrl: imageUrl ?? this.imageUrl,
+    );
+  }
+}
+
+class OutfitItem {
   final String id;
   final String name;
   final String category;
-  final String subcategory;
   final String color;
-  final String material;
+  final String size;
   final String brand;
-  final double price;
   final String imageUrl;
-  final double warmthLevel; // 0.0 to 1.0
-  final String season;
+  final double price;
+  final List<String> tags;
 
-  ClothingItem({
+  OutfitItem({
     required this.id,
     required this.name,
     required this.category,
-    required this.subcategory,
     required this.color,
-    required this.material,
+    required this.size,
     required this.brand,
-    required this.price,
     required this.imageUrl,
-    required this.warmthLevel,
-    required this.season,
+    required this.price,
+    required this.tags,
   });
 
-  factory ClothingItem.fromJson(Map<String, dynamic> json) {
-    return ClothingItem(
+  factory OutfitItem.fromJson(Map<String, dynamic> json) {
+    return OutfitItem(
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       category: json['category'] ?? '',
-      subcategory: json['subcategory'] ?? '',
       color: json['color'] ?? '',
-      material: json['material'] ?? '',
+      size: json['size'] ?? '',
       brand: json['brand'] ?? '',
-      price: (json['price'] ?? 0.0).toDouble(),
       imageUrl: json['imageUrl'] ?? '',
-      warmthLevel: (json['warmthLevel'] ?? 0.0).toDouble(),
-      season: json['season'] ?? '',
+      price: (json['price'] ?? 0.0).toDouble(),
+      tags: List<String>.from(json['tags'] ?? []),
     );
   }
 
@@ -113,68 +164,51 @@ class ClothingItem {
       'id': id,
       'name': name,
       'category': category,
-      'subcategory': subcategory,
       'color': color,
-      'material': material,
+      'size': size,
       'brand': brand,
-      'price': price,
       'imageUrl': imageUrl,
-      'warmthLevel': warmthLevel,
-      'season': season,
+      'price': price,
+      'tags': tags,
     };
   }
 }
 
-class OutfitRecommendation {
-  final OutfitModel outfit;
-  final double confidence; // 0.0 to 1.0
-  final String reason;
-  final List<String> tips;
-  final DateTime recommendedAt;
+// ClothingItem은 OutfitItem의 별칭으로 사용
+typedef ClothingItem = OutfitItem;
 
-  OutfitRecommendation({
-    required this.outfit,
-    required this.confidence,
-    required this.reason,
-    required this.tips,
-    required this.recommendedAt,
+class OutfitCategory {
+  final String id;
+  final String name;
+  final String description;
+  final String icon;
+  final List<String> subcategories;
+
+  OutfitCategory({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.icon,
+    required this.subcategories,
   });
 
-  factory OutfitRecommendation.fromJson(Map<String, dynamic> json) {
-    return OutfitRecommendation(
-      outfit: OutfitModel.fromJson(json['outfit'] ?? {}),
-      confidence: (json['confidence'] ?? 0.0).toDouble(),
-      reason: json['reason'] ?? '',
-      tips: List<String>.from(json['tips'] ?? []),
-      recommendedAt: DateTime.parse(json['recommendedAt'] ?? DateTime.now().toIso8601String()),
+  factory OutfitCategory.fromJson(Map<String, dynamic> json) {
+    return OutfitCategory(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      description: json['description'] ?? '',
+      icon: json['icon'] ?? '',
+      subcategories: List<String>.from(json['subcategories'] ?? []),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'outfit': outfit.toJson(),
-      'confidence': confidence,
-      'reason': reason,
-      'tips': tips,
-      'recommendedAt': recommendedAt.toIso8601String(),
+      'id': id,
+      'name': name,
+      'description': description,
+      'icon': icon,
+      'subcategories': subcategories,
     };
   }
-}
-
-enum ClothingCategory {
-  top,
-  bottom,
-  outerwear,
-  shoes,
-  accessories,
-}
-
-enum Occasion {
-  casual,
-  work,
-  formal,
-  date,
-  exercise,
-  travel,
-  party,
 }

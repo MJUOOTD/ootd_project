@@ -10,6 +10,8 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String _selectedFilter = 'All';
+  List<String> _searchResults = [];
 
   @override
   void dispose() {
@@ -27,7 +29,7 @@ class _SearchScreenState extends State<SearchScreen> {
         title: const Text(
           'Search',
           style: TextStyle(
-            color: Color(0xFF030213),
+            color: Color.fromARGB(239, 107, 141, 252),
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -41,13 +43,22 @@ class _SearchScreenState extends State<SearchScreen> {
             color: Colors.white,
             child: TextField(
               controller: _searchController,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+              ),
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
+                  _performSearch();
                 });
               },
               decoration: InputDecoration(
                 hintText: 'Search outfits, styles, brands...',
+                hintStyle: const TextStyle(
+                  color: Color(0xFF999999),
+                  fontSize: 16,
+                ),
                 prefixIcon: const Icon(Icons.search, color: Color(0xFF666666)),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -56,6 +67,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           _searchController.clear();
                           setState(() {
                             _searchQuery = '';
+                            _searchResults.clear();
                           });
                         },
                       )
@@ -79,17 +91,15 @@ class _SearchScreenState extends State<SearchScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildFilterChip('All', true),
+                  _buildFilterChip('All', _selectedFilter == 'All'),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Casual', false),
+                  _buildFilterChip('Casual', _selectedFilter == 'Casual'),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Work', false),
+                  _buildFilterChip('Work', _selectedFilter == 'Work'),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Formal', false),
+                  _buildFilterChip('Formal', _selectedFilter == 'Formal'),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Date', false),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Exercise', false),
+                  _buildFilterChip('Party', _selectedFilter == 'Party'),
                 ],
               ),
             ),
@@ -97,9 +107,7 @@ class _SearchScreenState extends State<SearchScreen> {
           
           // Search Results
           Expanded(
-            child: _searchQuery.isEmpty
-                ? _buildEmptyState()
-                : _buildSearchResults(),
+            child: _buildSearchResults(),
           ),
         ],
       ),
@@ -111,42 +119,69 @@ class _SearchScreenState extends State<SearchScreen> {
       label: Text(label),
       selected: isSelected,
       onSelected: (selected) {
-        // Handle filter selection
+        setState(() {
+          _selectedFilter = label;
+          _performSearch();
+        });
       },
-      backgroundColor: const Color(0xFFF8F9FA),
-      selectedColor: const Color(0xFF030213),
+      backgroundColor: Colors.grey[200],
+      selectedColor: const Color.fromARGB(239, 107, 141, 252),
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : const Color(0xFF666666),
-        fontWeight: FontWeight.w500,
+        color: isSelected ? Colors.white : Colors.black,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
     );
   }
 
+  Widget _buildSearchResults() {
+    if (_searchQuery.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    if (_searchResults.isEmpty) {
+      return _buildNoResults();
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        return _buildOutfitCard(_searchResults[index]);
+      },
+    );
+  }
+
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.search,
             size: 64,
-            color: Colors.grey[400],
+            color: Color(0xFF999999),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
-            'Search for outfits and styles',
+            'Search for outfits',
             style: TextStyle(
               fontSize: 18,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF333333),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
-            'Find the perfect outfit for any occasion',
+            'Find your perfect style',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: Color(0xFF666666),
             ),
           ),
         ],
@@ -154,83 +189,130 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildSearchResults() {
-    // Mock search results
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.75,
+  Widget _buildNoResults() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 64,
+            color: Color(0xFF999999),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'No results found',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF333333),
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Try different keywords',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF666666),
+            ),
+          ),
+        ],
       ),
-      itemCount: 10, // Mock count
-      itemBuilder: (context, index) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 3,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.image,
-                      size: 48,
-                      color: Colors.grey[400],
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 1,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Outfit ${index + 1}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Casual Style',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
+  }
+
+  Widget _buildOutfitCard(String outfit) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.checkroom,
+                  size: 48,
+                  color: Color(0xFF999999),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  outfit,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF333333),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Perfect for $outfit',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF666666),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _performSearch() {
+    if (_searchQuery.isEmpty) {
+      setState(() {
+        _searchResults.clear();
+      });
+      return;
+    }
+
+    // Mock search results
+    List<String> mockResults = [
+      'Casual Summer Outfit',
+      'Business Professional Look',
+      'Evening Party Dress',
+      'Weekend Casual Style',
+      'Formal Meeting Attire',
+      'Date Night Outfit',
+      'Gym Workout Clothes',
+      'Travel Comfort Look',
+    ];
+
+    String searchTerm = _searchQuery.toLowerCase();
+    List<String> filteredResults = mockResults.where((outfit) {
+      bool matchesSearch = outfit.toLowerCase().contains(searchTerm);
+      bool matchesFilter = _selectedFilter == 'All' || 
+          outfit.toLowerCase().contains(_selectedFilter.toLowerCase());
+      return matchesSearch && matchesFilter;
+    }).toList();
+
+    setState(() {
+      _searchResults = filteredResults;
+    });
   }
 }

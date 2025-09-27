@@ -20,28 +20,49 @@ class _TemperatureSensitivityStepState extends State<TemperatureSensitivityStep>
 
   final List<Map<String, dynamic>> _sensitivityOptions = [
     {
-      'level': 'low',
-      'label': 'Cold Sensitive',
-      'description': 'I feel cold easily and prefer warmer clothing',
-      'coldSensitivity': -0.5,
+      'level': TemperatureSensitivity.veryCold,
+      'label': '매우 추위를 많이 탐',
+      'description': '평소보다 두꺼운 옷을 추천해드려요',
+      'coldSensitivity': -1.0,
       'heatSensitivity': 0.0,
       'icon': Icons.ac_unit,
+      'color': Colors.blue,
     },
     {
-      'level': 'normal',
-      'label': 'Normal',
-      'description': 'I have average temperature sensitivity',
-      'coldSensitivity': 0.0,
+      'level': TemperatureSensitivity.cold,
+      'label': '추위를 많이 탐',
+      'description': '평소보다 따뜻한 옷을 추천해드려요',
+      'coldSensitivity': -0.5,
       'heatSensitivity': 0.0,
       'icon': Icons.thermostat,
+      'color': Colors.lightBlue,
     },
     {
-      'level': 'high',
-      'label': 'Heat Sensitive',
-      'description': 'I feel hot easily and prefer cooler clothing',
+      'level': TemperatureSensitivity.normal,
+      'label': '보통',
+      'description': '일반적인 옷차림을 추천해드려요',
       'coldSensitivity': 0.0,
-      'heatSensitivity': -0.5,
+      'heatSensitivity': 0.0,
+      'icon': Icons.thermostat_auto,
+      'color': Colors.green,
+    },
+    {
+      'level': TemperatureSensitivity.hot,
+      'label': '더위를 많이 탐',
+      'description': '평소보다 시원한 옷을 추천해드려요',
+      'coldSensitivity': 0.0,
+      'heatSensitivity': 0.5,
       'icon': Icons.wb_sunny,
+      'color': Colors.orange,
+    },
+    {
+      'level': TemperatureSensitivity.veryHot,
+      'label': '매우 더위를 많이 탐',
+      'description': '평소보다 매우 시원한 옷을 추천해드려요',
+      'coldSensitivity': 0.0,
+      'heatSensitivity': 1.0,
+      'icon': Icons.wb_sunny_outlined,
+      'color': Colors.red,
     },
   ];
 
@@ -51,111 +72,184 @@ class _TemperatureSensitivityStepState extends State<TemperatureSensitivityStep>
     _selectedSensitivity = widget.temperatureSensitivity;
   }
 
-  void _updateData() {
-    widget.onChanged(_selectedSensitivity);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 20),
-          
-          // Title
           const Text(
-            'Temperature Sensitivity',
+            '체감온도 설정',
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Color(0xFF2C3E50),
             ),
           ),
-          
           const SizedBox(height: 8),
-          
           const Text(
-            'How do you typically feel in different temperatures?',
+            '개인별 체감온도에 맞는 옷차림을 추천해드려요',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.white70,
+              color: Color(0xFF7F8C8D),
+            ),
+          ),
+          const SizedBox(height: 32),
+          
+          // Sensitivity Options
+          Expanded(
+            child: ListView.builder(
+              itemCount: _sensitivityOptions.length,
+              itemBuilder: (context, index) {
+                final option = _sensitivityOptions[index];
+                final isSelected = _selectedSensitivity == option['level'];
+                
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _selectedSensitivity = option['level'];
+                        });
+                        widget.onChanged(_selectedSensitivity);
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: isSelected 
+                              ? (option['color'] as Color).withOpacity(0.1)
+                              : Colors.grey[50],
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected 
+                                ? option['color'] as Color
+                                : Colors.grey[300]!,
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: isSelected 
+                                    ? option['color'] as Color
+                                    : Colors.grey[300],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                option['icon'] as IconData,
+                                color: isSelected ? Colors.white : Colors.grey[600],
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    option['label'] as String,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected 
+                                          ? option['color'] as Color
+                                          : const Color(0xFF2C3E50),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    option['description'] as String,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: isSelected 
+                                          ? (option['color'] as Color).withOpacity(0.8)
+                                          : const Color(0xFF7F8C8D),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isSelected)
+                              Icon(
+                                Icons.check_circle,
+                                color: option['color'] as Color,
+                                size: 24,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           
-          const SizedBox(height: 40),
-          
-          // Sensitivity Options
-          ..._sensitivityOptions.map((option) => _buildSensitivityOption(option)),
-          
-          const SizedBox(height: 32),
-          
-          // Visual Indicator
-          if (_selectedSensitivity.level.isNotEmpty) ...[
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.2)),
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    _getSelectedIcon(),
-                    size: 48,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _getSelectedLabel(),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _getSelectedDescription(),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          
-          const Spacer(),
-          
-          // Info Card
+          // Temperature Scale
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey[300]!),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.info_outline,
-                  color: Colors.white70,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'This helps us adjust outfit recommendations based on how you typically feel in different weather conditions',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
+                const Text(
+                  '체감온도 기준',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2C3E50),
                   ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildTemperatureIndicator(
+                        '매우 추위',
+                        Colors.blue,
+                        -1.0,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildTemperatureIndicator(
+                        '추위',
+                        Colors.lightBlue,
+                        -0.5,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildTemperatureIndicator(
+                        '보통',
+                        Colors.green,
+                        0.0,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildTemperatureIndicator(
+                        '더위',
+                        Colors.orange,
+                        0.5,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildTemperatureIndicator(
+                        '매우 더위',
+                        Colors.red,
+                        1.0,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -165,108 +259,27 @@ class _TemperatureSensitivityStepState extends State<TemperatureSensitivityStep>
     );
   }
 
-  Widget _buildSensitivityOption(Map<String, dynamic> option) {
-    final isSelected = _selectedSensitivity.level == option['level'];
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedSensitivity = TemperatureSensitivity(
-              coldSensitivity: option['coldSensitivity'],
-              heatSensitivity: option['heatSensitivity'],
-              level: option['level'],
-            );
-            _updateData();
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.all(20),
+  Widget _buildTemperatureIndicator(String label, Color color, double value) {
+    return Column(
+      children: [
+        Container(
+          width: 20,
+          height: 20,
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected ? Colors.white : Colors.white.withOpacity(0.3),
-              width: 2,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isSelected 
-                      ? const Color(0xFF030213) 
-                      : Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  option['icon'],
-                  color: isSelected ? Colors.white : Colors.white70,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      option['label'],
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected ? const Color(0xFF030213) : Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      option['description'],
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isSelected 
-                            ? const Color(0xFF030213).withOpacity(0.7) 
-                            : Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isSelected)
-                const Icon(
-                  Icons.check_circle,
-                  color: Color(0xFF030213),
-                  size: 24,
-                ),
-            ],
+            color: color,
+            shape: BoxShape.circle,
           ),
         ),
-      ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            color: Color(0xFF7F8C8D),
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
-  }
-
-  IconData _getSelectedIcon() {
-    final option = _sensitivityOptions.firstWhere(
-      (opt) => opt['level'] == _selectedSensitivity.level,
-      orElse: () => _sensitivityOptions[1],
-    );
-    return option['icon'];
-  }
-
-  String _getSelectedLabel() {
-    final option = _sensitivityOptions.firstWhere(
-      (opt) => opt['level'] == _selectedSensitivity.level,
-      orElse: () => _sensitivityOptions[1],
-    );
-    return option['label'];
-  }
-
-  String _getSelectedDescription() {
-    final option = _sensitivityOptions.firstWhere(
-      (opt) => opt['level'] == _selectedSensitivity.level,
-      orElse: () => _sensitivityOptions[1],
-    );
-    return option['description'];
   }
 }
