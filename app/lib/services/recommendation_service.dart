@@ -143,9 +143,15 @@ class RecommendationService {
   static String _generateOutfitTitle(WeatherModel weather, String occasion, int variation) {
     List<String> titles = [
       'Perfect for ${weather.condition.toLowerCase()} weather',
+<<<<<<< HEAD
       'Stylish $occasion look',
       'Comfortable ${weather.getWeatherCategory().name} outfit',
       'Trendy $occasion ensemble',
+=======
+      'Stylish ${occasion} look',
+      'Comfortable ${weather.getWeatherCategory().name} outfit',
+      'Trendy ${occasion} ensemble',
+>>>>>>> origin/moon
     ];
     return titles[variation % titles.length];
   }
@@ -201,7 +207,11 @@ class RecommendationService {
   static String _generateReason(WeatherModel weather, UserModel user, String occasion) {
     return 'Recommended based on current ${weather.condition.toLowerCase()} weather, '
            'your temperature sensitivity (${user.temperatureSensitivity.level}), '
+<<<<<<< HEAD
            'and the $occasion occasion.';
+=======
+           'and the ${occasion} occasion.';
+>>>>>>> origin/moon
   }
 
   static List<String> _generateTips(WeatherModel weather, List<String> items) {

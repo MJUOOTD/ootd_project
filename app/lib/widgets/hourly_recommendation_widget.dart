@@ -58,7 +58,7 @@ class HourlyRecommendationWidget extends StatelessWidget {
               height: 100,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: 8, // 현재 시간부터 8시간
+                itemCount: 20, // 현재 시간부터 20시간
                 itemBuilder: (context, index) {
                   final displayHour = (now.hour + index) % 24;
                   final timeSlot = _getTimeSlot(displayHour);
@@ -252,7 +252,7 @@ class HourlyRecommendationWidget extends StatelessWidget {
                         Text(weatherEmoji, style: const TextStyle(fontSize: 24)),
                         const SizedBox(width: 12),
                         Text(
-                          '$currentRecommendation - $temperature℃',
+                          '$currentRecommendation - ${temperature}℃',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,

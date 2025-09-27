@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../services/simple_auth_service.dart';
+import '../providers/user_provider.dart';
+import '../models/user_model.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -281,29 +282,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    try {
-      await SimpleAuthService.instance.login(
-        id: _idController.text,
-        password: _passwordController.text,
-      );
+    // 간단한 로그인 로직 (실제로는 Firebase Auth 등을 사용)
+    final userProviderNotifier = ref.read(userProvider.notifier);
+    
+    // 임시 사용자 생성 (실제로는 서버에서 인증)
+    final user = userProviderNotifier.createUser(
+      name: _idController.text,
+      email: '${_idController.text}@example.com',
+      gender: '남성',
+      age: 25,
+      bodyType: '보통',
+      activityLevel: '보통',
+      temperatureSensitivity: TemperatureSensitivity(
+        coldSensitivity: 0.0,
+        heatSensitivity: 0.0,
+        level: 'normal',
+      ),
+      stylePreferences: ['캐주얼', '깔끔한'],
+      situationPreferences: {
+        '출근': true,
+        '데이트': true,
+        '운동': false,
+      },
+    );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('로그인 성공!'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        context.go('/');
-      }
-    } catch (e) {
-      if (!mounted) return;
+    await userProviderNotifier.completeOnboarding(user);
+    
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('로그인 실패: ${e.toString()}'),
-          duration: const Duration(seconds: 2),
+        const SnackBar(
+          content: Text('로그인 성공!'),
+          duration: Duration(seconds: 2),
         ),
       );
+      // 메인화면으로 이동
+      context.go('/');
     }
   }
 

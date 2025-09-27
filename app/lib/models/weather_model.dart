@@ -69,6 +69,22 @@ class WeatherModel {
     );
   }
 
+  // factory WeatherModel.fromJson(Map<String, dynamic> json) {
+  //   return WeatherModel(
+  //     temperature: (json['temperature'] ?? 0.0).toDouble(),
+  //     feelsLike: (json['feelsLike'] ?? 0.0).toDouble(),
+  //     humidity: json['humidity'] ?? 0,
+  //     windSpeed: (json['windSpeed'] ?? 0.0).toDouble(),
+  //     windDirection: json['windDirection'] ?? 0,
+  //     precipitation: (json['precipitation'] ?? 0.0).toDouble(),
+  //     condition: json['condition'] ?? '',
+  //     description: json['description'] ?? '',
+  //     icon: json['icon'] ?? '',
+  //     timestamp: DateTime.parse(json['timestamp'] ?? DateTime.now().toIso8601String()),
+  //     location: Location.fromJson(json['location'] ?? {}),
+  //   );
+  // }
+
   Map<String, dynamic> toJson() {
     return {
       'temperature': temperature,
@@ -157,6 +173,16 @@ class Location {
       'district': district,
       'subLocality': subLocality,
     };
+  }
+
+  // Get formatted location string with district only
+  String get formattedLocation {
+    List<String> parts = [];
+    
+    if (city.isNotEmpty) parts.add(city);
+    if (district != null && district!.isNotEmpty) parts.add(district!);
+    
+    return parts.join(' ');
   }
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/weather_model.dart';
 import '../services/service_locator.dart';
+import '../services/weather_service.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

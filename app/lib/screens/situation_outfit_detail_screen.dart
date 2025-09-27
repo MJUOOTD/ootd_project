@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/user_provider.dart';
 import '../widgets/feedback_modal.dart';
 
@@ -10,6 +11,7 @@ class SituationOutfitDetailScreen extends ConsumerStatefulWidget {
   final List<String> tags;
   final String temperature;
   final String situation;
+  final String? imageUrl;
 
   const SituationOutfitDetailScreen({
     super.key,
@@ -18,6 +20,7 @@ class SituationOutfitDetailScreen extends ConsumerStatefulWidget {
     required this.tags,
     required this.temperature,
     required this.situation,
+    this.imageUrl,
   });
 
   @override
@@ -118,13 +121,40 @@ class _SituationOutfitDetailScreenState extends ConsumerState<SituationOutfitDet
               ),
               child: Stack(
                 children: [
-                  const Center(
-                    child: Icon(
-                      Icons.person,
-                      size: 100,
-                      color: Colors.white,
-                    ),
-                  ),
+                  // 실제 이미지 또는 플레이스홀더
+                  widget.imageUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: widget.imageUrl!,
+                          width: double.infinity,
+                          height: 400,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: Colors.grey[300],
+                            child: const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: Colors.grey[300],
+                            child: const Center(
+                              child: Icon(
+                                Icons.person,
+                                size: 100,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: Icon(
+                              Icons.person,
+                              size: 100,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                   Positioned(
                     top: 16,
                     right: 16,

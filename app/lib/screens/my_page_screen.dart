@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/user_provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class MyPageScreen extends ConsumerStatefulWidget {
   const MyPageScreen({super.key});
@@ -14,13 +13,12 @@ class MyPageScreen extends ConsumerStatefulWidget {
 class _MyPageScreenState extends ConsumerState<MyPageScreen> {
   @override
   Widget build(BuildContext context) {
-    final auth = ref.watch(authStateProvider);
-    final bool isLoggedIn = auth.asData?.value != null;
+    final userState = ref.watch(userProvider);
     
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
-        child: isLoggedIn 
+        child: userState.isLoggedIn
             ? _buildLoggedInView()
             : _buildLoginPromptView(),
       ),
@@ -197,10 +195,8 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
   }
 
   void _handleLogout() async {
-    debugPrint('[before signOut] currentUser: ${FirebaseAuth.instance.currentUser?.uid}');
-    
     final userProviderNotifier = ref.read(userProvider.notifier);
-    await userProviderNotifier.signOutAll();
+    await userProviderNotifier.logout();
     
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -209,7 +205,6 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
           duration: Duration(seconds: 2),
         ),
       );
-    debugPrint('[after signOut] currentUser: ${FirebaseAuth.instance.currentUser?.uid}');
       // 메인페이지로 이동
       context.go('/');
     }

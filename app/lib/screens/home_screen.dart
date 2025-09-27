@@ -10,6 +10,8 @@ import '../widgets/situation_recommendation_widget.dart';
 import 'outfit_detail_screen.dart';
 import 'notification_list_screen.dart';
 import 'cart_screen.dart';
+import 'notification_screen.dart';
+import '../widgets/feedback_modal.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -79,7 +81,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const Text(
               'OOTD',
               style: TextStyle(
-                color:  Color.fromARGB(239, 107, 141, 252),
+                color:  const Color.fromARGB(239, 107, 141, 252),
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -123,13 +125,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ],
           ),
-          IconButton(
-            icon: const Icon(Icons.shopping_cart_outlined, color: Color.fromARGB(255, 75, 70, 70), size: 24),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const CartScreen(),
-                ),
+          Consumer(
+            builder: (context, ref, child) {
+              final userState = ref.watch(userProvider);
+              return IconButton(
+                icon: const Icon(Icons.shopping_cart_outlined, color: Color.fromARGB(255, 75, 70, 70), size: 24),
+                onPressed: () {
+                  if (userState.isLoggedIn) {
+                    // 로그인된 경우: 장바구니 화면으로 이동
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const CartScreen(),
+                      ),
+                    );
+                  } else {
+                    // 로그인되지 않은 경우: 피드백 모달 표시
+                    FeedbackModal.show(context);
+                  }
+                },
               );
             },
           ),
@@ -188,7 +201,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: 24),
                   
                   if (weatherState.hasWeather)
-                    const WeatherWidget(),
+                    WeatherWidget(
+                      weather: weatherState.currentWeather!,
+                      onRefresh: _refreshData,
+                    ),
                   
                   const SizedBox(height: 24),
                   
@@ -200,11 +216,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   
                   const SizedBox(height: 24),
                   
-                  // Use state to conditionally show widgets.
-                  if (userState.isLoggedIn)
-                    _buildRecommendationsSection(recommendationState)
-                  else
-                    _buildLoginPrompt(),
+                  // Today's Recommendations section removed
                 ],
               ),
             );

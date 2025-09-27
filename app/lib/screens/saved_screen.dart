@@ -20,13 +20,12 @@ class _SavedScreenState extends ConsumerState<SavedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = ref.watch(authStateProvider);
-    final bool isLoggedIn = auth.asData?.value != null;
+    final userState = ref.watch(userProvider);
     
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
-        child: isLoggedIn 
+        child: userState.isLoggedIn
             ? _buildLoggedInView()
             : _buildLoginPromptView(),
       ),

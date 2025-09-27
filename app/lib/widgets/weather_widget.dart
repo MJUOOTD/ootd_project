@@ -63,12 +63,29 @@ class WeatherWidget extends ConsumerWidget {
                     icon: const Icon(Icons.refresh, size: 18),
                     color: Colors.grey[700],
                     onPressed: () {
-                      final notifier = ref.read(weatherProvider);
-                      notifier.refreshWeather(force: true);
+                      ref.read(weatherProvider.notifier).refreshWeather(force: true);
                     },
                   ),
                 ],
               ),
+              const SizedBox(width: 6),
+              Text(
+                '오늘 날씨',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+            GestureDetector(
+              onTap: () => ref.read(weatherProvider.notifier).refreshWeather(),
+              child: Icon(
+                Icons.refresh,
+                color: Colors.grey[600],
+                size: 18,
+              ),
+            ),
             ],
           ),
           
@@ -131,7 +148,11 @@ class WeatherWidget extends ConsumerWidget {
                         ),
                       ),
                       child: Text(
+<<<<<<< HEAD
                         '${w.temperature.round()}°C',
+=======
+                        '${widget.weather.temperature.round()}°C',
+>>>>>>> origin/moon
                         style: const TextStyle(
                           color: Colors.black,
                           fontSize: 24,
@@ -143,7 +164,11 @@ class WeatherWidget extends ConsumerWidget {
                     const SizedBox(height: 8),
                     
                     Text(
+<<<<<<< HEAD
                       _getWeatherConditionKorean(w.condition),
+=======
+                      _getWeatherConditionKorean(widget.weather.condition),
+>>>>>>> origin/moon
                       style: TextStyle(
                         color: Colors.grey[700],
                         fontSize: 16,
@@ -187,7 +212,11 @@ class WeatherWidget extends ConsumerWidget {
                 child: _buildWeatherDetail(
                   icon: Icons.water_drop,
                   label: '습도',
+<<<<<<< HEAD
                   value: '${w.humidity}%',
+=======
+                  value: '${widget.weather.humidity}%',
+>>>>>>> origin/moon
                   color: const Color.fromARGB(255, 148, 188, 222),
                 ),
               ),
@@ -196,24 +225,119 @@ class WeatherWidget extends ConsumerWidget {
                 child: _buildWeatherDetail(
                   icon: Icons.air,
                   label: '바람',
+<<<<<<< HEAD
                   value: '${w.windSpeed.toStringAsFixed(1)}m/s',
+=======
+                  value: '${widget.weather.windSpeed.toStringAsFixed(1)}m/s',
+>>>>>>> origin/moon
                   color: const Color.fromARGB(255, 93, 118, 132),
                 ),
               ),
             ],
           ),
           
+<<<<<<< HEAD
           
           // Location permission action button
           // 새로고침 버튼 예: 외부에서 제공 가능
+=======
+          const SizedBox(height: 16),
+
+          // Today's recommended outfit
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.blue.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.checkroom,
+                      color: Colors.blue[700],
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '오늘의 추천 착장',
+                      style: TextStyle(
+                        color: Colors.blue[700],
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _getRecommendedOutfit(widget.weather.temperature),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          
+          // Location permission action button
+          if (!_isLocationPermissionGranted) ...[
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: _requestLocationPermission,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.orange.withOpacity(0.5),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      color: Colors.orange,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '위치 권한 허용하기',
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+>>>>>>> origin/moon
         ],
       ),
     );
   }
 
+<<<<<<< HEAD
   static Widget _buildSkeleton() => Container(height: 160, decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(12)));
   static Widget _buildEmpty() => Container(padding: const EdgeInsets.all(16), child: const Text('날씨 정보를 불러올 수 없습니다'));
 
+=======
+>>>>>>> origin/moon
   Widget _buildWeatherDetail({
     required IconData icon,
     required String label,
@@ -256,6 +380,7 @@ class WeatherWidget extends ConsumerWidget {
   }
 
 
+<<<<<<< HEAD
   String _formatLocation(Location loc) {
     final parts = <String>[];
     if ((loc.city).isNotEmpty) parts.add(loc.city);
@@ -265,6 +390,8 @@ class WeatherWidget extends ConsumerWidget {
     return parts.join(' ');
   }
 
+=======
+>>>>>>> origin/moon
   String _getWeatherConditionKorean(String condition) {
     switch (condition.toLowerCase()) {
       case 'clear':
@@ -286,7 +413,11 @@ class WeatherWidget extends ConsumerWidget {
   }
 
   String _getWeatherMessage() {
+<<<<<<< HEAD
     final temp = 22.0; // 메시지 단순화용, 실제 추천 로직과 연동 시 교체 가능
+=======
+    final temp = widget.weather.temperature;
+>>>>>>> origin/moon
     
     if (temp < 10) {
       return "오늘은 쌀쌀해요. 따뜻한 겉옷을 챙기세요!";
@@ -299,6 +430,7 @@ class WeatherWidget extends ConsumerWidget {
     }
   }
 
+<<<<<<< HEAD
   IconData _iconFromCondition(String c) {
     switch (c.toLowerCase()) {
       case 'clear':
@@ -342,3 +474,23 @@ class _Badge extends StatelessWidget {
     );
   }
 }
+=======
+  String _getRecommendedOutfit(double temperature) {
+    if (temperature < 0) {
+      return '두꺼운 패딩 + 목도리 + 따뜻한 부츠';
+    } else if (temperature < 5) {
+      return '패딩 + 니트 + 긴바지';
+    } else if (temperature < 10) {
+      return '코트 + 스웨터 + 청바지';
+    } else if (temperature < 15) {
+      return '자켓 + 긴팔 + 슬랙스';
+    } else if (temperature < 20) {
+      return '가디건 + 긴팔 + 청바지';
+    } else if (temperature < 25) {
+      return '긴팔 + 반바지 또는 얇은 긴바지';
+    } else {
+      return '반팔 + 반바지 + 가벼운 신발';
+    }
+  }
+}
+>>>>>>> origin/moon
