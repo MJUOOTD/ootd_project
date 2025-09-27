@@ -238,7 +238,7 @@ class OutfitRecommendationWidget extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            item.name,
+                            item,
                             style: TextStyle(
                               fontSize: 11,
                               color: Colors.grey[600],

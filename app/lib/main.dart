@@ -4,11 +4,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'app_router.dart';
 import 'services/service_locator.dart';
 import 'theme/app_theme.dart';
-import 'services/pinterest_api_service.dart';
 import 'firebase_options.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'services/pexels_api_service.dart';
+import 'providers/user_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,23 +30,44 @@ void main() async {
   // Pexels API 키 설정
   PexelsApiService.setApiKey('QwYk7NDUowPtA83vo1RHNYSHCWWnDTd8MNlm8giDiGq8blf1iPAHu1DP');
   
-  runApp(const OOTDApp());
+  runApp(
+    ProviderScope(
+      child: const OOTDApp(),
+    ),
+  );
 }
 
-class OOTDApp extends StatelessWidget {
+class OOTDApp extends ConsumerStatefulWidget {
   const OOTDApp({super.key});
 
   @override
+  ConsumerState<OOTDApp> createState() => _OOTDAppState();
+}
+
+class _OOTDAppState extends ConsumerState<OOTDApp> {
+  @override
+  void initState() {
+    super.initState();
+    // UserProvider 초기화
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(userProvider.notifier).initialize();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ProviderScope(
-      child: MaterialApp.router(
-        title: 'OOTD - Optimal Outfit Tailorer',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
-        routerConfig: appRouter,
-      ),
+    // Firebase 인증 상태 변화를 감지하여 UserProvider 업데이트
+    ref.listen(authStateListenerProvider, (previous, next) {
+      // authStateListenerProvider가 자동으로 UserProvider를 업데이트함
+    });
+
+    return MaterialApp.router(
+      title: 'OOTD - Optimal Outfit Tailorer',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
+      routerConfig: appRouter,
     );
   }
 }

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:geolocator/geolocator.dart';
 import '../models/weather_model.dart';
 import 'location/location_service.dart';
 
@@ -17,15 +16,15 @@ import 'location/location_service.dart';
 /// - Update all consumers to use the new interface
 @Deprecated('Use the new WeatherService interface instead')
 class WeatherService {
-  static const String _baseUrl = 'https://api.openweathermap.org/data/2.5/weather?q={CITY}&appid={API_KEY}&units=metric&lang=kr';
   static const String _apiKey = '8c0dfc3837648d4d8eb0282057f1d3a2'; // Replace with actual API key
   
   // Get current weather for user's location
   static Future<WeatherModel> getCurrentWeather() async {
+    Location? location;
     try {
       // Use the new location service
       final locationService = RealLocationService();
-      final location = await locationService.getCurrentLocation();
+      location = await locationService.getCurrentLocation();
       
       // Make API call to backend server
       // Use localhost for web, 10.0.2.2 for Android emulator
@@ -48,8 +47,8 @@ class WeatherService {
       if (e is http.ClientException) {
         print('HTTP Client Exception: ${e.message}');
       }
-      // Return mock data for development
-      return _getMockWeatherData();
+      // Return mock data for development with actual location
+      return _getMockWeatherData(location);
     }
   }
 
@@ -78,12 +77,20 @@ class WeatherService {
         throw Exception('Failed to load weather data: ${response.statusCode}');
       }
     } catch (e) {
-      return _getMockWeatherData();
+      // Create location from lat/lon for mock data
+      final location = Location(
+        latitude: lat,
+        longitude: lon,
+        city: 'Current Location',
+        country: 'Unknown',
+      );
+      return _getMockWeatherData(location);
     }
   }
 
   // Get 5-day forecast
   static Future<List<WeatherModel>> getForecast() async {
+    Location? location;
     try {
       // TODO: Replace with new WeatherService interface
       // final weatherService = GetIt.instance<weather_interface.WeatherService>();
@@ -91,7 +98,7 @@ class WeatherService {
       
       // Use the new location service
       final locationService = RealLocationService();
-      final location = await locationService.getCurrentLocation();
+      location = await locationService.getCurrentLocation();
       
       final url = Uri.parse(
         'https://api.openweathermap.org/data/2.5/forecast?lat=${location.latitude}&lon=${location.longitude}&appid=$_apiKey&units=metric&lang=kr'
@@ -107,31 +114,11 @@ class WeatherService {
       }
     } catch (e) {
       print('Forecast API error: $e');
-      return [_getMockWeatherData()];
+      return [_getMockWeatherData(location)];
     }
   }
 
 
-  static WeatherModel _parseWeatherData(Map<String, dynamic> data, Position position) {
-    return WeatherModel(
-      temperature: data['main']['temp'].toDouble(),
-      feelsLike: data['main']['feels_like'].toDouble(),
-      humidity: data['main']['humidity'],
-      windSpeed: data['wind']['speed'].toDouble(),
-      windDirection: data['wind']['deg'] ?? 0,
-      precipitation: data['rain']?['1h']?.toDouble() ?? 0.0,
-      condition: data['weather'][0]['main'],
-      description: data['weather'][0]['description'],
-      icon: data['weather'][0]['icon'],
-      timestamp: DateTime.now(),
-      location: Location(
-        latitude: position.latitude,
-        longitude: position.longitude,
-        city: data['name'] ?? 'Unknown',
-        country: data['sys']['country'] ?? 'Unknown',
-      ),
-    );
-  }
 
   static WeatherModel _parseWeatherDataFromBackend(Map<String, dynamic> data, Location location) {
     return WeatherModel(
@@ -151,26 +138,6 @@ class WeatherService {
         city: data['location']?['city'] ?? location.city,
         country: data['location']?['country'] ?? location.country,
         district: data['location']?['district'],
-      ),
-    );
-  }
-  static WeatherModel _parseWeatherDataFromLocation(Map<String, dynamic> data, Location location) {
-    return WeatherModel(
-      temperature: data['main']['temp'].toDouble(),
-      feelsLike: data['main']['feels_like'].toDouble(),
-      humidity: data['main']['humidity'],
-      windSpeed: data['wind']['speed'].toDouble(),
-      windDirection: data['wind']['deg'] ?? 0,
-      precipitation: data['rain']?['1h']?.toDouble() ?? 0.0,
-      condition: data['weather'][0]['main'],
-      description: data['weather'][0]['description'],
-      icon: data['weather'][0]['icon'],
-      timestamp: DateTime.now(),
-      location: Location(
-        latitude: location.latitude,
-        longitude: location.longitude,
-        city: data['name'] ?? location.city,
-        country: data['sys']['country'] ?? location.country,
       ),
     );
   }
@@ -203,8 +170,29 @@ class WeatherService {
     return forecast;
   }
 
-  // Mock data for development
-  static WeatherModel _getMockWeatherData() {
+  // Mock data for development - use actual GPS coordinates
+  static WeatherModel _getMockWeatherData([Location? actualLocation]) {
+    // Use actual location if provided, otherwise use Seoul as fallback
+    Location location;
+    if (actualLocation != null) {
+      // Try to get city name from coordinates
+      final cityName = _getCityNameFromCoordinates(actualLocation.latitude, actualLocation.longitude);
+      location = Location(
+        latitude: actualLocation.latitude,
+        longitude: actualLocation.longitude,
+        city: cityName,
+        country: 'KR',
+        district: _getDistrictFromCoordinates(actualLocation.latitude, actualLocation.longitude),
+      );
+    } else {
+      location = Location(
+        latitude: 37.5665,
+        longitude: 126.9780,
+        city: 'Seoul',
+        country: 'KR',
+      );
+    }
+    
     return WeatherModel(
       temperature: 22.0,
       feelsLike: 24.0,
@@ -216,12 +204,64 @@ class WeatherService {
       description: 'clear sky',
       icon: '01d',
       timestamp: DateTime.now(),
-      location: Location(
-        latitude: 37.5665,
-        longitude: 126.9780,
-        city: 'Seoul',
-        country: 'KR',
-      ),
+      location: location,
     );
+  }
+
+  // Simple reverse geocoding for Korean cities
+  static String _getCityNameFromCoordinates(double lat, double lon) {
+    // Major Korean cities with approximate coordinates
+    final cities = [
+      {'name': 'Seoul', 'lat': 37.5665, 'lon': 126.9780, 'tolerance': 0.5},
+      {'name': 'Busan', 'lat': 35.1796, 'lon': 129.0756, 'tolerance': 0.5},
+      {'name': 'Incheon', 'lat': 37.4563, 'lon': 126.7052, 'tolerance': 0.3},
+      {'name': 'Daegu', 'lat': 35.8714, 'lon': 128.6014, 'tolerance': 0.4},
+      {'name': 'Daejeon', 'lat': 36.3504, 'lon': 127.3845, 'tolerance': 0.4},
+      {'name': 'Gwangju', 'lat': 35.1595, 'lon': 126.8526, 'tolerance': 0.4},
+      {'name': 'Ulsan', 'lat': 35.5384, 'lon': 129.3114, 'tolerance': 0.4},
+      {'name': 'Sejong', 'lat': 36.4800, 'lon': 127.2890, 'tolerance': 0.3},
+      {'name': 'Gyeonggi', 'lat': 37.4138, 'lon': 127.5183, 'tolerance': 0.8},
+      {'name': 'Gangwon', 'lat': 37.8228, 'lon': 128.1555, 'tolerance': 1.0},
+      {'name': 'Chungbuk', 'lat': 36.8, 'lon': 127.7, 'tolerance': 0.8},
+      {'name': 'Chungnam', 'lat': 36.5184, 'lon': 126.8000, 'tolerance': 0.8},
+      {'name': 'Jeonbuk', 'lat': 35.7175, 'lon': 127.1530, 'tolerance': 0.8},
+      {'name': 'Jeonnam', 'lat': 34.8679, 'lon': 126.9910, 'tolerance': 0.8},
+      {'name': 'Gyeongbuk', 'lat': 36.4919, 'lon': 128.8889, 'tolerance': 0.8},
+      {'name': 'Gyeongnam', 'lat': 35.4606, 'lon': 128.2132, 'tolerance': 0.8},
+      {'name': 'Jeju', 'lat': 33.4996, 'lon': 126.5312, 'tolerance': 0.5},
+    ];
+
+    for (final city in cities) {
+      final cityLat = city['lat'] as double;
+      final cityLon = city['lon'] as double;
+      final tolerance = city['tolerance'] as double;
+      
+      final latDiff = (lat - cityLat).abs();
+      final lonDiff = (lon - cityLon).abs();
+      if (latDiff <= tolerance && lonDiff <= tolerance) {
+        return city['name'] as String;
+      }
+    }
+
+    // If no city matches, return coordinates
+    return '${lat.toStringAsFixed(3)}, ${lon.toStringAsFixed(3)}';
+  }
+
+  // Get district name for Seoul area
+  static String? _getDistrictFromCoordinates(double lat, double lon) {
+    // Seoul districts (simplified)
+    if (lat >= 37.4 && lat <= 37.7 && lon >= 126.7 && lon <= 127.2) {
+      if (lat >= 37.5 && lat <= 37.6 && lon >= 126.9 && lon <= 127.1) {
+        return '강남구';
+      } else if (lat >= 37.5 && lat <= 37.6 && lon >= 126.7 && lon <= 126.9) {
+        return '마포구';
+      } else if (lat >= 37.6 && lat <= 37.7 && lon >= 126.9 && lon <= 127.1) {
+        return '성북구';
+      } else if (lat >= 37.4 && lat <= 37.5 && lon >= 126.9 && lon <= 127.1) {
+        return '서초구';
+      }
+      return '서울';
+    }
+    return null;
   }
 }

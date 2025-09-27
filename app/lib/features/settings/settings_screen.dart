@@ -60,7 +60,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final userState = ref.watch(userProvider);
     final user = userState.currentUser;
-    final settingsProvider = ref.watch(settingsProviderProvider);
+    // final settingsProvider = ref.watch(settingsProviderProvider);
     
     return Scaffold(
       appBar: AppBar(

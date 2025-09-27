@@ -57,21 +57,13 @@ class _SituationRecommendationWidgetState extends ConsumerState<SituationRecomme
           const Text(
             '상황별 추천',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '오늘 어떤 상황인가요?',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.black,
-              fontWeight: FontWeight.normal,
+              color: Color(0xFF2C3E50),
             ),
           ),
           const SizedBox(height: 16),
+          
           // 카테고리 탭
           SizedBox(
             height: 40,
@@ -89,6 +81,7 @@ class _SituationRecommendationWidgetState extends ConsumerState<SituationRecomme
             ),
           ),
           const SizedBox(height: 16),
+          
           // 룩 카드들
           _isLoading 
             ? _buildLoadingGrid()
@@ -119,7 +112,7 @@ class _SituationRecommendationWidgetState extends ConsumerState<SituationRecomme
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.grey[200] : Colors.transparent,
+          color: isSelected ? const Color.fromARGB(239, 107, 141, 252) : Colors.grey[200],
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -128,19 +121,43 @@ class _SituationRecommendationWidgetState extends ConsumerState<SituationRecomme
             Icon(
               icon,
               size: 16,
-              color: Color.fromARGB(239, 107, 141, 252),
+              color: isSelected ? Colors.white : Colors.grey[600],
             ),
             const SizedBox(width: 4),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: Colors.black,
+                color: isSelected ? Colors.white : Colors.grey[600],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingGrid() {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 0.8,
+      children: List.generate(4, (index) => _buildLoadingCard()),
+    );
+  }
+
+  Widget _buildLoadingCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Center(
+        child: CircularProgressIndicator(),
       ),
     );
   }
@@ -167,138 +184,87 @@ class _SituationRecommendationWidgetState extends ConsumerState<SituationRecomme
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withOpacity(0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            // 이미지 영역
-            Expanded(
-              flex: 3,
-              child: Container(
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: CachedNetworkImage(
+                imageUrl: photo.src.medium,
                 width: double.infinity,
-                decoration: BoxDecoration(
-<<<<<<< HEAD
+                height: double.infinity,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
                   color: Colors.grey[200],
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
                 ),
-                child: Stack(
-                  children: [
-                    const Center(
-                      child: Icon(
-                        Icons.person,
-                        size: 40,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.star,
-                              size: 12,
-                              color: Colors.amber,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              rating,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-=======
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                ),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: CachedNetworkImage(
-                    imageUrl: photo.src.medium,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: Colors.grey[200],
-                      child: const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: Colors.grey[200],
-                      child: const Center(
-                        child: Icon(
-                          Icons.person,
-                          size: 40,
-                          color: Colors.grey,
-                        ),
-                      ),
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.grey[200],
+                  child: const Center(
+                    child: Icon(
+                      Icons.image,
+                      size: 48,
+                      color: Colors.grey,
                     ),
                   ),
->>>>>>> origin/moon
                 ),
               ),
             ),
-            // 텍스트 영역
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-<<<<<<< HEAD
-                      title,
-=======
                       photo.alt,
->>>>>>> origin/moon
                       style: const TextStyle(
-                        fontSize: 12,
+                        color: Colors.white,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 4,
-                      runSpacing: 2,
-<<<<<<< HEAD
-                      children: tags.map((tag) => Container(
-=======
-                      children: photo.tags.map((tag) => Container(
->>>>>>> origin/moon
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.star,
+                          color: Colors.amber,
+                          size: 16,
                         ),
-                        child: Text(
-                          tag,
+                        const SizedBox(width: 4),
+                        Text(
+                          photo.rating.toString(),
                           style: const TextStyle(
-                            fontSize: 8,
-                            color: Colors.black,
+                            color: Colors.white,
+                            fontSize: 12,
                           ),
                         ),
-                      )).toList(),
+                        const Spacer(),
+                        Text(
+                          _selectedSituation,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -309,83 +275,4 @@ class _SituationRecommendationWidgetState extends ConsumerState<SituationRecomme
       ),
     );
   }
-<<<<<<< HEAD
 }
-=======
-
-  Widget _buildLoadingGrid() {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 0.8,
-      children: List.generate(4, (index) => _buildLoadingCard()),
-    );
-  }
-
-  Widget _buildLoadingCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 3,
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              ),
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    height: 12,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 8,
-                    width: 60,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
->>>>>>> origin/moon

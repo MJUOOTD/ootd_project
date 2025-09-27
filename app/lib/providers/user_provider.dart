@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import '../services/simple_auth_service.dart';
 
 class UserState {
   final UserModel? currentUser;
@@ -46,17 +47,88 @@ class UserProvider extends StateNotifier<UserState> {
     state = state.copyWith(isLoading: true);
     
     try {
+      // Check Firebase Auth state
+      final authService = SimpleAuthService.instance;
+      final firebaseUser = authService.currentUser;
+      
       // Check if user has completed onboarding
       final prefs = await SharedPreferences.getInstance();
       final isFirstTime = prefs.getBool('isFirstTime') ?? true;
       
-      // In a real app, you would check Firebase Auth here
-      // For now, we'll use SharedPreferences to simulate user state
-      final userData = prefs.getString('userData');
       UserModel? currentUser;
-      if (userData != null) {
-        // Parse user data from SharedPreferences
-        // currentUser = UserModel.fromJson(jsonDecode(userData));
+      
+      if (firebaseUser != null) {
+        // User is authenticated with Firebase
+        final userData = prefs.getString('userData');
+        if (userData != null) {
+          try {
+            // Parse user data from SharedPreferences
+            // currentUser = UserModel.fromJson(jsonDecode(userData));
+            // For now, create a basic user model
+            currentUser = UserModel(
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName ?? 'User',
+              email: firebaseUser.email ?? '',
+              gender: '남성',
+              age: 25,
+              bodyType: '보통',
+              activityLevel: '보통',
+              temperatureSensitivity: TemperatureSensitivity.normal,
+              stylePreferences: ['캐주얼', '깔끔한'],
+              situationPreferences: {
+                '출근': true,
+                '데이트': true,
+                '운동': false,
+              },
+              createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
+              updatedAt: firebaseUser.metadata.lastSignInTime ?? DateTime.now(),
+            );
+          } catch (e) {
+            print('Error parsing user data: $e');
+            // Create a basic user model if parsing fails
+            currentUser = UserModel(
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName ?? 'User',
+              email: firebaseUser.email ?? '',
+              gender: '남성',
+              age: 25,
+              bodyType: '보통',
+              activityLevel: '보통',
+              temperatureSensitivity: TemperatureSensitivity.normal,
+              stylePreferences: ['캐주얼', '깔끔한'],
+              situationPreferences: {
+                '출근': true,
+                '데이트': true,
+                '운동': false,
+              },
+              createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
+              updatedAt: firebaseUser.metadata.lastSignInTime ?? DateTime.now(),
+            );
+          }
+        } else {
+          // No user data in SharedPreferences, create basic user model
+          currentUser = UserModel(
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName ?? 'User',
+            email: firebaseUser.email ?? '',
+            gender: '남성',
+            age: 25,
+            bodyType: '보통',
+            activityLevel: '보통',
+            temperatureSensitivity: TemperatureSensitivity.normal,
+            stylePreferences: ['캐주얼', '깔끔한'],
+            situationPreferences: {
+              '출근': true,
+              '데이트': true,
+              '운동': false,
+            },
+            createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
+            updatedAt: firebaseUser.metadata.lastSignInTime ?? DateTime.now(),
+          );
+        }
+      } else {
+        // Firebase user is null, ensure currentUser is also null
+        currentUser = null;
       }
       
       state = state.copyWith(
@@ -74,30 +146,42 @@ class UserProvider extends StateNotifier<UserState> {
 
   // Unified sign-out: Firebase session + local state reset, with auth-state wait
   Future<void> signOutAll() async {
+    print('[signOutAll] Starting logout process...');
     state = state.copyWith(isLoading: true, error: null);
     Object? signOutError;
     try {
-      await fb.FirebaseAuth.instance.signOut();
+      // Use SimpleAuthService for logout
+      final authService = SimpleAuthService.instance;
+      print('[signOutAll] Calling Firebase signOut...');
+      await authService.signOut();
+      print('[signOutAll] Firebase signOut completed');
+      
+      // Wait for auth state to change
       try {
-        await fb.FirebaseAuth.instance
-            .authStateChanges()
+        print('[signOutAll] Waiting for auth state change...');
+        await authService.authState
             .firstWhere((u) => u == null)
             .timeout(const Duration(seconds: 3), onTimeout: () => null);
+        print('[signOutAll] Auth state changed to null');
       } catch (_) {
+        print('[signOutAll] Auth state wait timeout or error');
         // Ignore wait errors; we'll still finalize local state
       }
     } catch (e) {
+      print('[signOutAll] Error during logout: $e');
       signOutError = e;
     } finally {
+      print('[signOutAll] Finalizing local state...');
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('userData');
       await prefs.setBool('isFirstTime', true);
-      state = state.copyWith(
+      state = UserState(
         currentUser: null,
         isFirstTime: true,
         isLoading: false,
         error: signOutError == null ? null : 'Failed to sign out: ${signOutError.toString()}',
       );
+      print('[signOutAll] Local state cleared. Current user: ${state.currentUser}');
     }
   }
 
@@ -194,30 +278,22 @@ class UserProvider extends StateNotifier<UserState> {
     
     await updateUser(updatedUser);
   }
-  /* signOutAll 로 대체
-  // Logout user
+  // Logout user (alias for signOutAll)
   Future<void> logout() async {
-    state = state.copyWith(isLoading: true);
-
-    try {
-      // Clear SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('userData');
-      await prefs.setBool('isFirstTime', true);
-      
-      state = state.copyWith(
-        currentUser: null,
-        isFirstTime: true,
-        isLoading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        error: 'Failed to logout: ${e.toString()}',
-        isLoading: false,
-      );
-    }
+    await signOutAll();
   }
-  */
+
+  // Clear user state without Firebase signout (for auth state listener)
+  void clearUser() {
+    print('[clearUser] Clearing user state...');
+    state = UserState(
+      currentUser: null,
+      isLoading: false,
+      error: null,
+      isFirstTime: state.isFirstTime,
+    );
+    print('[clearUser] User state cleared. Current user: ${state.currentUser}');
+  }
 
   // Create a new user for onboarding
   UserModel createUser({
@@ -255,5 +331,22 @@ final userProvider = StateNotifierProvider<UserProvider, UserState>((ref) {
 });
 
 final authStateProvider = StreamProvider<fb.User?>((ref) {
-  return fb.FirebaseAuth.instance.authStateChanges();
+  return SimpleAuthService.instance.authState;
+});
+
+// Firebase 인증 상태 변화를 감지하여 UserProvider 업데이트
+final authStateListenerProvider = StreamProvider<void>((ref) {
+  return SimpleAuthService.instance.authState.map((user) {
+    print('[authStateListenerProvider] Firebase user changed: ${user?.uid}');
+    // 로그인 시에만 UserProvider 초기화 (로그아웃 시에는 initialize 호출하지 않음)
+    if (user != null) {
+      print('[authStateListenerProvider] User logged in, initializing...');
+      ref.read(userProvider.notifier).initialize();
+    } else {
+      print('[authStateListenerProvider] User logged out, clearing user state...');
+      // 로그아웃 시에는 사용자 상태만 초기화
+      ref.read(userProvider.notifier).clearUser();
+    }
+    return null;
+  });
 });

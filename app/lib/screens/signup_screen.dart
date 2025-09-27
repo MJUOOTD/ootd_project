@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/user_provider.dart';
 import '../models/user_model.dart';
+import '../services/simple_auth_service.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -17,6 +18,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final TextEditingController _confirmPasswordController = TextEditingController();
   String _selectedTemperatureSensitivity = '보통';
   bool _isDropdownOpen = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -25,6 +27,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     _confirmPasswordController.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -328,16 +331,25 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
-                          onTap: _handleSignup,
-                          child: const Center(
-                            child: Text(
-                              '회원가입하기',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                          onTap: _isLoading ? null : _handleSignup,
+                          child: Center(
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    '회원가입하기',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                           ),
                         ),
                       ),
@@ -462,64 +474,105 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       return;
     }
 
-    // 간단한 회원가입 로직 (실제로는 Firebase Auth 등을 사용)
-    final userProviderNotifier = ref.read(userProvider.notifier);
-    
-    // 선택된 체온 민감도에 따른 설정값 계산
-    double coldSensitivity = 0.0;
-    double heatSensitivity = 0.0;
-    String level = 'normal';
-    
-    switch (_selectedTemperatureSensitivity) {
-      case '더위를 많이 탐':
-        coldSensitivity = 0.0;
-        heatSensitivity = 0.5;
-        level = 'heat_sensitive';
-        break;
-      case '보통':
-        coldSensitivity = 0.0;
-        heatSensitivity = 0.0;
-        level = 'normal';
-        break;
-      case '추위를 많이 탐':
-        coldSensitivity = 0.5;
-        heatSensitivity = 0.0;
-        level = 'cold_sensitive';
-        break;
-    }
-
-    // 임시 사용자 생성 (실제로는 서버에서 인증)
-    final user = userProviderNotifier.createUser(
-      name: _idController.text,
-      email: '${_idController.text}@example.com',
-      gender: '남성',
-      age: 25,
-      bodyType: '보통',
-      activityLevel: '보통',
-      temperatureSensitivity: TemperatureSensitivity(
-        coldSensitivity: coldSensitivity,
-        heatSensitivity: heatSensitivity,
-        level: level,
-      ),
-      stylePreferences: ['캐주얼', '깔끔한'],
-      situationPreferences: {
-        '출근': true,
-        '데이트': true,
-        '운동': false,
-      },
-    );
-
-    await userProviderNotifier.completeOnboarding(user);
-    
-    if (mounted) {
+    if (_passwordController.text.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('회원가입 성공!'),
+          content: Text('비밀번호는 6자 이상이어야 합니다'),
           duration: Duration(seconds: 2),
         ),
       );
-      // 로그인 화면으로 이동
-      context.pop();
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Firebase 인증을 사용한 회원가입
+      final authService = SimpleAuthService.instance;
+      final userCredential = await authService.register(
+        id: _idController.text,
+        password: _passwordController.text,
+      );
+
+      if (userCredential.user != null) {
+        // 회원가입 성공 시 UserProvider 업데이트
+        final userProviderNotifier = ref.read(userProvider.notifier);
+    
+        // 선택된 체온 민감도에 따른 설정값 계산
+        TemperatureSensitivity temperatureSensitivity = TemperatureSensitivity.normal;
+        
+        switch (_selectedTemperatureSensitivity) {
+          case '더위를 많이 탐':
+            temperatureSensitivity = TemperatureSensitivity.hot;
+            break;
+          case '보통':
+            temperatureSensitivity = TemperatureSensitivity.normal;
+            break;
+          case '추위를 많이 탐':
+            temperatureSensitivity = TemperatureSensitivity.cold;
+            break;
+        }
+
+        // Firebase에서 사용자 정보를 가져와서 UserModel 생성
+        final user = userProviderNotifier.createUser(
+          name: _idController.text,
+          email: userCredential.user!.email ?? '${_idController.text}@example.com',
+          gender: '남성',
+          age: 25,
+          bodyType: '보통',
+          activityLevel: '보통',
+          temperatureSensitivity: temperatureSensitivity,
+          stylePreferences: ['캐주얼', '깔끔한'],
+          situationPreferences: {
+            '출근': true,
+            '데이트': true,
+            '운동': false,
+          },
+        );
+
+        await userProviderNotifier.completeOnboarding(user);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('회원가입 성공!'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          // 메인화면으로 이동
+          context.go('/');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        String errorMessage = '회원가입에 실패했습니다.';
+        
+        if (e.toString().contains('email-already-in-use')) {
+          errorMessage = '이미 사용 중인 아이디입니다.';
+        } else if (e.toString().contains('weak-password')) {
+          errorMessage = '비밀번호가 너무 약합니다. 더 강한 비밀번호를 사용해주세요.';
+        } else if (e.toString().contains('invalid-email')) {
+          errorMessage = '올바르지 않은 아이디 형식입니다.';
+        } else if (e.toString().contains('operation-not-allowed')) {
+          errorMessage = '이메일/비밀번호 계정이 비활성화되어 있습니다.';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 }

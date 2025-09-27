@@ -109,9 +109,13 @@ class PexelsApiService {
             photographerUrl: 'https://pexels.com/@business',
             src: PexelsPhotoSrc(
               original: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
+              large2x: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
               large: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
               medium: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=300',
               small: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=200',
+              portrait: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=300',
+              landscape: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
+              tiny: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=100',
             ),
             alt: 'Professional business outfit',
             rating: 4.8,
@@ -123,9 +127,13 @@ class PexelsApiService {
             photographerUrl: 'https://pexels.com/@office',
             src: PexelsPhotoSrc(
               original: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
+              large2x: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
               large: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
               medium: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=300',
               small: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=200',
+              portrait: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=300',
+              landscape: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
+              tiny: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=100',
             ),
             alt: 'Business casual style',
             rating: 4.6,
@@ -140,9 +148,13 @@ class PexelsApiService {
             photographerUrl: 'https://pexels.com/@romantic',
             src: PexelsPhotoSrc(
               original: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
+              large2x: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
               large: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
               medium: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=300',
               small: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=200',
+              portrait: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=300',
+              landscape: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
+              tiny: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=100',
             ),
             alt: 'Romantic date night outfit',
             rating: 4.9,
@@ -157,9 +169,13 @@ class PexelsApiService {
             photographerUrl: 'https://pexels.com/@fitness',
             src: PexelsPhotoSrc(
               original: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
+              large2x: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
               large: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
               medium: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=300',
               small: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=200',
+              portrait: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=300',
+              landscape: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
+              tiny: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=100',
             ),
             alt: 'Gym workout outfit',
             rating: 4.7,
@@ -174,9 +190,13 @@ class PexelsApiService {
             photographerUrl: 'https://pexels.com/@travel',
             src: PexelsPhotoSrc(
               original: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
+              large2x: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
               large: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
               medium: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=300',
               small: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=200',
+              portrait: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=300',
+              landscape: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400',
+              tiny: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=100',
             ),
             alt: 'Travel adventure outfit',
             rating: 4.8,
@@ -192,19 +212,19 @@ class PexelsApiService {
 // Pexels 사진 데이터 모델
 class PexelsPhoto {
   final int id;
+  final String alt;
   final String photographer;
   final String photographerUrl;
   final PexelsPhotoSrc src;
-  final String alt;
   final double rating;
   final List<String> tags;
 
   PexelsPhoto({
     required this.id,
+    required this.alt,
     required this.photographer,
     required this.photographerUrl,
     required this.src,
-    required this.alt,
     required this.rating,
     required this.tags,
   });
@@ -212,38 +232,15 @@ class PexelsPhoto {
   factory PexelsPhoto.fromJson(Map<String, dynamic> json) {
     return PexelsPhoto(
       id: json['id'] ?? 0,
-      photographer: json['photographer'] ?? 'Unknown',
+      alt: json['alt'] ?? '',
+      photographer: json['photographer'] ?? '',
       photographerUrl: json['photographer_url'] ?? '',
       src: PexelsPhotoSrc.fromJson(json['src'] ?? {}),
-      alt: json['alt'] ?? 'Fashion photo',
-      rating: 4.0 + ((json['id'] ?? 0) % 10) / 10, // 임시 평점 생성
-      tags: _extractTags(json['alt'] ?? ''),
+      rating: (json['rating'] ?? 0.0).toDouble(),
+      tags: List<String>.from(json['tags'] ?? []),
     );
   }
 
-  // 설명에서 태그 추출
-  static List<String> _extractTags(String alt) {
-    final List<String> tags = [];
-    final lowerAlt = alt.toLowerCase();
-    
-    if (lowerAlt.contains('business') || lowerAlt.contains('professional')) {
-      tags.addAll(['프로페셔널', '깔끔한']);
-    }
-    if (lowerAlt.contains('casual') || lowerAlt.contains('relaxed')) {
-      tags.addAll(['편안한', '캐주얼']);
-    }
-    if (lowerAlt.contains('romantic') || lowerAlt.contains('date')) {
-      tags.addAll(['우아한', '로맨틱']);
-    }
-    if (lowerAlt.contains('workout') || lowerAlt.contains('gym')) {
-      tags.addAll(['편안한', '기능성']);
-    }
-    if (lowerAlt.contains('travel') || lowerAlt.contains('vacation')) {
-      tags.addAll(['편안한', '실용적']);
-    }
-    
-    return tags.isNotEmpty ? tags : ['스타일리시'];
-  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -261,32 +258,48 @@ class PexelsPhoto {
 // Pexels 사진 소스 데이터 모델
 class PexelsPhotoSrc {
   final String original;
+  final String large2x;
   final String large;
   final String medium;
   final String small;
+  final String portrait;
+  final String landscape;
+  final String tiny;
 
   PexelsPhotoSrc({
     required this.original,
+    required this.large2x,
     required this.large,
     required this.medium,
     required this.small,
+    required this.portrait,
+    required this.landscape,
+    required this.tiny,
   });
 
   factory PexelsPhotoSrc.fromJson(Map<String, dynamic> json) {
     return PexelsPhotoSrc(
       original: json['original'] ?? '',
+      large2x: json['large2x'] ?? '',
       large: json['large'] ?? '',
       medium: json['medium'] ?? '',
       small: json['small'] ?? '',
+      portrait: json['portrait'] ?? '',
+      landscape: json['landscape'] ?? '',
+      tiny: json['tiny'] ?? '',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'original': original,
+      'large2x': large2x,
       'large': large,
       'medium': medium,
       'small': small,
+      'portrait': portrait,
+      'landscape': landscape,
+      'tiny': tiny,
     };
   }
 }

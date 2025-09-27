@@ -107,14 +107,22 @@ class WeatherModel {
   double getAdjustedTemperature(TemperatureSensitivity sensitivity) {
     double adjustment = 0.0;
     
-    // Cold sensitivity adjustment
-    if (sensitivity.coldSensitivity < 0) {
-      adjustment += sensitivity.coldSensitivity * 2; // Feel colder
-    }
-    
-    // Heat sensitivity adjustment  
-    if (sensitivity.heatSensitivity < 0) {
-      adjustment += sensitivity.heatSensitivity * 2; // Feel hotter
+    switch (sensitivity) {
+      case TemperatureSensitivity.veryCold:
+        adjustment = -4.0; // Feel much colder
+        break;
+      case TemperatureSensitivity.cold:
+        adjustment = -2.0; // Feel colder
+        break;
+      case TemperatureSensitivity.normal:
+        adjustment = 0.0; // No adjustment
+        break;
+      case TemperatureSensitivity.hot:
+        adjustment = 2.0; // Feel hotter
+        break;
+      case TemperatureSensitivity.veryHot:
+        adjustment = 4.0; // Feel much hotter
+        break;
     }
     
     return temperature + adjustment;

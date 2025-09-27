@@ -91,19 +91,6 @@ class _SearchScreenState extends State<SearchScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-<<<<<<< HEAD
-                  _buildFilterChip('All', true),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Casual', false),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Work', false),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Formal', false),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Date', false),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Exercise', false),
-=======
                   _buildFilterChip('All', _selectedFilter == 'All'),
                   const SizedBox(width: 8),
                   _buildFilterChip('Casual', _selectedFilter == 'Casual'),
@@ -112,10 +99,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   const SizedBox(width: 8),
                   _buildFilterChip('Formal', _selectedFilter == 'Formal'),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Date', _selectedFilter == 'Date'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Exercise', _selectedFilter == 'Exercise'),
->>>>>>> origin/moon
+                  _buildFilterChip('Party', _selectedFilter == 'Party'),
                 ],
               ),
             ),
@@ -123,9 +107,7 @@ class _SearchScreenState extends State<SearchScreen> {
           
           // Search Results
           Expanded(
-            child: _searchQuery.isEmpty
-                ? _buildEmptyState()
-                : _buildSearchResults(),
+            child: _buildSearchResults(),
           ),
         ],
       ),
@@ -137,29 +119,170 @@ class _SearchScreenState extends State<SearchScreen> {
       label: Text(label),
       selected: isSelected,
       onSelected: (selected) {
-<<<<<<< HEAD
-        // Handle filter selection
-      },
-      backgroundColor: const Color(0xFFF8F9FA),
-      selectedColor:const Color.fromARGB(239, 107, 141, 252),
-=======
         setState(() {
           _selectedFilter = label;
           _performSearch();
         });
       },
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Colors.grey[200],
       selectedColor: const Color.fromARGB(239, 107, 141, 252),
->>>>>>> origin/moon
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : const Color(0xFF666666),
-        fontWeight: FontWeight.w500,
+        color: isSelected ? Colors.white : Colors.black,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
     );
   }
 
-<<<<<<< HEAD
-=======
+  Widget _buildSearchResults() {
+    if (_searchQuery.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    if (_searchResults.isEmpty) {
+      return _buildNoResults();
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        return _buildOutfitCard(_searchResults[index]);
+      },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search,
+            size: 64,
+            color: Color(0xFF999999),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Search for outfits',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF333333),
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Find your perfect style',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF666666),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoResults() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 64,
+            color: Color(0xFF999999),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'No results found',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF333333),
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Try different keywords',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF666666),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOutfitCard(String outfit) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.checkroom,
+                  size: 48,
+                  color: Color(0xFF999999),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  outfit,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF333333),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Perfect for $outfit',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF666666),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _performSearch() {
     if (_searchQuery.isEmpty) {
       setState(() {
@@ -168,257 +291,28 @@ class _SearchScreenState extends State<SearchScreen> {
       return;
     }
 
-    // Mock search results based on query and filter
-    List<String> mockResults = [];
-    String searchTerm = _searchQuery.toLowerCase();
-    
-    // Generate mock outfit URLs based on search query and filter
-    for (int i = 1; i <= 8; i++) {
-      String outfitType = _selectedFilter.toLowerCase();
-      if (outfitType == 'all') {
-        outfitType = ['casual', 'work', 'formal', 'date', 'exercise'][i % 5];
-      }
-      
-      // Mock Pexels-style URLs for different outfit types
-      String imageUrl = _getMockImageUrl(outfitType, i);
-      mockResults.add(imageUrl);
-    }
-    
-    setState(() {
-      _searchResults = mockResults;
-    });
-  }
-
-  String _getMockImageUrl(String outfitType, int index) {
-    // Mock URLs that simulate real outfit images
-    Map<String, List<String>> outfitImages = {
-      'casual': [
-        'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg',
-        'https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg',
-        'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg',
-        'https://images.pexels.com/photos/1040881/pexels-photo-1040881.jpeg',
-      ],
-      'work': [
-        'https://images.pexels.com/photos/1040882/pexels-photo-1040882.jpeg',
-        'https://images.pexels.com/photos/1040883/pexels-photo-1040883.jpeg',
-        'https://images.pexels.com/photos/1040884/pexels-photo-1040884.jpeg',
-        'https://images.pexels.com/photos/1040885/pexels-photo-1040885.jpeg',
-      ],
-      'formal': [
-        'https://images.pexels.com/photos/1040886/pexels-photo-1040886.jpeg',
-        'https://images.pexels.com/photos/1040887/pexels-photo-1040887.jpeg',
-        'https://images.pexels.com/photos/1040888/pexels-photo-1040888.jpeg',
-        'https://images.pexels.com/photos/1040889/pexels-photo-1040889.jpeg',
-      ],
-      'date': [
-        'https://images.pexels.com/photos/1040890/pexels-photo-1040890.jpeg',
-        'https://images.pexels.com/photos/1040891/pexels-photo-1040891.jpeg',
-        'https://images.pexels.com/photos/1040892/pexels-photo-1040892.jpeg',
-        'https://images.pexels.com/photos/1040893/pexels-photo-1040893.jpeg',
-      ],
-      'exercise': [
-        'https://images.pexels.com/photos/1040894/pexels-photo-1040894.jpeg',
-        'https://images.pexels.com/photos/1040895/pexels-photo-1040895.jpeg',
-        'https://images.pexels.com/photos/1040896/pexels-photo-1040896.jpeg',
-        'https://images.pexels.com/photos/1040897/pexels-photo-1040897.jpeg',
-      ],
-    };
-    
-    List<String> images = outfitImages[outfitType] ?? outfitImages['casual']!;
-    return images[index % images.length];
-  }
-
->>>>>>> origin/moon
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.search,
-            size: 64,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Search for outfits and styles',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Find the perfect outfit for any occasion',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchResults() {
-<<<<<<< HEAD
     // Mock search results
-=======
-    if (_searchResults.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search_off,
-              size: 64,
-              color: Color(0xFF666666),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'No results found',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF666666),
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Try different keywords or filters',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF999999),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+    List<String> mockResults = [
+      'Casual Summer Outfit',
+      'Business Professional Look',
+      'Evening Party Dress',
+      'Weekend Casual Style',
+      'Formal Meeting Attire',
+      'Date Night Outfit',
+      'Gym Workout Clothes',
+      'Travel Comfort Look',
+    ];
 
->>>>>>> origin/moon
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.75,
-      ),
-<<<<<<< HEAD
-      itemCount: 10, // Mock count
-=======
-      itemCount: _searchResults.length,
->>>>>>> origin/moon
-      itemBuilder: (context, index) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 3,
-                child: Container(
-                  decoration: BoxDecoration(
-<<<<<<< HEAD
-                    color: Colors.grey[200],
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.image,
-                      size: 48,
-                      color:  const Color.fromARGB(239, 107, 141, 252),
-=======
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                    child: Image.network(
-                      _searchResults[index],
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: Icon(
-                              Icons.image,
-                              size: 48,
-                              color: Color(0xFF666666),
-                            ),
-                          ),
-                        );
-                      },
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              color: Color.fromARGB(239, 107, 141, 252),
-                            ),
-                          ),
-                        );
-                      },
->>>>>>> origin/moon
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 1,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-<<<<<<< HEAD
-                        'Outfit ${index + 1}',
-=======
-                        '${_selectedFilter} Outfit ${index + 1}',
->>>>>>> origin/moon
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-<<<<<<< HEAD
-                        'Casual Style',
-=======
-                        '${_selectedFilter} Style',
->>>>>>> origin/moon
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    String searchTerm = _searchQuery.toLowerCase();
+    List<String> filteredResults = mockResults.where((outfit) {
+      bool matchesSearch = outfit.toLowerCase().contains(searchTerm);
+      bool matchesFilter = _selectedFilter == 'All' || 
+          outfit.toLowerCase().contains(_selectedFilter.toLowerCase());
+      return matchesSearch && matchesFilter;
+    }).toList();
+
+    setState(() {
+      _searchResults = filteredResults;
+    });
   }
 }

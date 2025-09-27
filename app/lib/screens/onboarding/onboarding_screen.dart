@@ -28,11 +28,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _age = 25;
   String _bodyType = 'average';
   String _activityLevel = 'moderate';
-  TemperatureSensitivity _temperatureSensitivity = TemperatureSensitivity(
-    coldSensitivity: 0.0,
-    heatSensitivity: 0.0,
-    level: 'normal',
-  );
+  TemperatureSensitivity _temperatureSensitivity = TemperatureSensitivity.normal;
   List<String> _stylePreferences = [];
   Map<String, dynamic> _situationPreferences = {};
 

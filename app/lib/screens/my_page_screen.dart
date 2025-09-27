@@ -195,8 +195,11 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
   }
 
   void _handleLogout() async {
+    print('[MyPageScreen] Logout button pressed');
     final userProviderNotifier = ref.read(userProvider.notifier);
-    await userProviderNotifier.logout();
+    print('[MyPageScreen] Current user before logout: ${userProviderNotifier.currentUser}');
+    await userProviderNotifier.signOutAll();
+    print('[MyPageScreen] After signOutAll, current user: ${userProviderNotifier.currentUser}');
     
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -4,13 +4,10 @@ import '../providers/weather_provider.dart';
 import '../providers/user_provider.dart';
 import '../providers/recommendation_provider.dart';
 import '../widgets/weather_widget.dart';
-import '../widgets/outfit_recommendation_widget.dart';
 import '../widgets/hourly_recommendation_widget.dart';
 import '../widgets/situation_recommendation_widget.dart';
-import 'outfit_detail_screen.dart';
 import 'notification_list_screen.dart';
 import 'cart_screen.dart';
-import 'notification_screen.dart';
 import '../widgets/feedback_modal.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -81,7 +78,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const Text(
               'OOTD',
               style: TextStyle(
-                color:  const Color.fromARGB(239, 107, 141, 252),
+                color: Color.fromARGB(239, 107, 141, 252),
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -156,7 +153,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             // Note the corrected provider names.
             final weatherState = ref.watch(weatherProvider);
             final userState = ref.watch(userProvider);
-            final recommendationState = ref.watch(recommendationProvider);
+            // final recommendationState = ref.watch(recommendationProvider);
             if (weatherState.isLoading) {
               return const Center(
                 child: CircularProgressIndicator(),
@@ -260,145 +257,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildRecommendationsSection(dynamic recommendationState) {
-    if (recommendationState.isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
 
-    if (recommendationState.error != null) {
-      return Center(
-        child: Column(
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 8),
-            Text('Error: ${recommendationState.error}'),
-          ],
-        ),
-      );
-    }
-
-    if (!recommendationState.hasRecommendations) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: Text('No recommendations available'),
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Today\'s Recommendations',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF030213),
-          ),
-        ),
-        const SizedBox(height: 16),
-        OutfitRecommendationWidget(
-          recommendation: recommendationState.selectedRecommendation!,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => OutfitDetailScreen(
-                  recommendation: recommendationState.selectedRecommendation!,
-                ),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 16),
-        _buildRecommendationControls(recommendationState),
-      ],
-    );
-  }
-
-  Widget _buildRecommendationControls(dynamic recommendationState) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          // Call actions on the notifier.
-          onPressed: ref.read(recommendationProvider.notifier).previousRecommendation,
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF030213),
-          ),
-        ),
-        Text(
-          '${recommendationState.recommendations.indexOf(recommendationState.selectedRecommendation!) + 1} of ${recommendationState.recommendations.length}',
-          style: const TextStyle(
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF666666),
-          ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.arrow_forward_ios),
-          // Call actions on the notifier.
-          onPressed: ref.read(recommendationProvider.notifier).nextRecommendation,
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF030213),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoginPrompt() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.person_outline,
-            size: 48,
-            color: Color(0xFF030213),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Complete your profile to get personalized outfit recommendations',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: Color(0xFF666666),
-            ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              // Navigate to settings/profile
-              Navigator.of(context).pushNamed('/settings');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF030213),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-            ),
-            child: const Text('Complete Profile'),
-          ),
-        ],
-      ),
-    );
-  }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/user_provider.dart';
 import '../models/user_model.dart';
+import '../services/simple_auth_service.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -14,6 +15,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -204,16 +206,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
-                          onTap: _handleLogin,
-                          child: const Center(
-                            child: Text(
-                              '로그인하기',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                          onTap: _isLoading ? null : _handleLogin,
+                          child: Center(
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    '로그인하기',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                           ),
                         ),
                       ),
@@ -282,41 +293,82 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    // 간단한 로그인 로직 (실제로는 Firebase Auth 등을 사용)
-    final userProviderNotifier = ref.read(userProvider.notifier);
-    
-    // 임시 사용자 생성 (실제로는 서버에서 인증)
-    final user = userProviderNotifier.createUser(
-      name: _idController.text,
-      email: '${_idController.text}@example.com',
-      gender: '남성',
-      age: 25,
-      bodyType: '보통',
-      activityLevel: '보통',
-      temperatureSensitivity: TemperatureSensitivity(
-        coldSensitivity: 0.0,
-        heatSensitivity: 0.0,
-        level: 'normal',
-      ),
-      stylePreferences: ['캐주얼', '깔끔한'],
-      situationPreferences: {
-        '출근': true,
-        '데이트': true,
-        '운동': false,
-      },
-    );
+    setState(() {
+      _isLoading = true;
+    });
 
-    await userProviderNotifier.completeOnboarding(user);
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('로그인 성공!'),
-          duration: Duration(seconds: 2),
-        ),
+    try {
+      // Firebase 인증을 사용한 로그인
+      final authService = SimpleAuthService.instance;
+      final userCredential = await authService.login(
+        id: _idController.text,
+        password: _passwordController.text,
       );
-      // 메인화면으로 이동
-      context.go('/');
+
+      if (userCredential.user != null) {
+        // 로그인 성공 시 UserProvider 업데이트
+        final userProviderNotifier = ref.read(userProvider.notifier);
+        
+        // Firebase에서 사용자 정보를 가져와서 UserModel 생성
+        final user = userProviderNotifier.createUser(
+          name: _idController.text,
+          email: userCredential.user!.email ?? '${_idController.text}@example.com',
+          gender: '남성',
+          age: 25,
+          bodyType: '보통',
+          activityLevel: '보통',
+          temperatureSensitivity: TemperatureSensitivity.normal,
+          stylePreferences: ['캐주얼', '깔끔한'],
+          situationPreferences: {
+            '출근': true,
+            '데이트': true,
+            '운동': false,
+          },
+        );
+
+        await userProviderNotifier.completeOnboarding(user);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('로그인 성공!'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          // 메인화면으로 이동
+          context.go('/');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        String errorMessage = '로그인에 실패했습니다.';
+        
+        if (e.toString().contains('user-not-found')) {
+          errorMessage = '존재하지 않는 아이디입니다.';
+        } else if (e.toString().contains('wrong-password')) {
+          errorMessage = '비밀번호가 올바르지 않습니다.';
+        } else if (e.toString().contains('invalid-email')) {
+          errorMessage = '올바르지 않은 아이디 형식입니다.';
+        } else if (e.toString().contains('user-disabled')) {
+          errorMessage = '비활성화된 계정입니다.';
+        } else if (e.toString().contains('too-many-requests')) {
+          errorMessage = '너무 많은 로그인 시도로 인해 일시적으로 차단되었습니다.';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

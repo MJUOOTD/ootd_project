@@ -92,42 +92,34 @@ class UserModel {
   }
 }
 
-class TemperatureSensitivity {
-  final double coldSensitivity; // -1.0 to 1.0 (more negative = more cold sensitive)
-  final double heatSensitivity; // -1.0 to 1.0 (more negative = more heat sensitive)
-  final String level; // 'low', 'normal', 'high'
-
-  TemperatureSensitivity({
-    required this.coldSensitivity,
-    required this.heatSensitivity,
-    required this.level,
-  });
+enum TemperatureSensitivity {
+  veryCold,
+  cold,
+  normal,
+  hot,
+  veryHot;
 
   factory TemperatureSensitivity.fromJson(Map<String, dynamic> json) {
-    return TemperatureSensitivity(
-      coldSensitivity: (json['coldSensitivity'] ?? 0.0).toDouble(),
-      heatSensitivity: (json['heatSensitivity'] ?? 0.0).toDouble(),
-      level: json['level'] ?? 'normal',
-    );
+    final level = json['level'] ?? 'normal';
+    switch (level) {
+      case 'very_cold':
+        return TemperatureSensitivity.veryCold;
+      case 'cold':
+        return TemperatureSensitivity.cold;
+      case 'normal':
+        return TemperatureSensitivity.normal;
+      case 'hot':
+        return TemperatureSensitivity.hot;
+      case 'very_hot':
+        return TemperatureSensitivity.veryHot;
+      default:
+        return TemperatureSensitivity.normal;
+    }
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'coldSensitivity': coldSensitivity,
-      'heatSensitivity': heatSensitivity,
-      'level': level,
+      'level': name,
     };
-  }
-
-  TemperatureSensitivity copyWith({
-    double? coldSensitivity,
-    double? heatSensitivity,
-    String? level,
-  }) {
-    return TemperatureSensitivity(
-      coldSensitivity: coldSensitivity ?? this.coldSensitivity,
-      heatSensitivity: heatSensitivity ?? this.heatSensitivity,
-      level: level ?? this.level,
-    );
   }
 }

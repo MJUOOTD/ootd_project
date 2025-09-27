@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'home_screen.dart';
+import 'home_screen.dart' as home;
 import 'search_screen.dart';
 import 'saved_screen.dart';
 import 'my_page_screen.dart';
@@ -54,12 +54,12 @@ class _MainNavigationState extends State<MainNavigation> {
     }
   }
 
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const SearchScreen(),
-    const SavedScreen(),
-    const MyPageScreen(),
-  ];
+  final List<Widget>     _screens = [
+      const home.HomeScreen(),
+      const SearchScreen(),
+      const SavedScreen(),
+      const MyPageScreen(),
+    ];
 
 
   @override

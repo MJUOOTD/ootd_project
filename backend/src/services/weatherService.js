@@ -55,7 +55,7 @@ export async function getCurrentWeather(lat, lon, opts = {}) {
       return { ...cached, cached: true, source: cached.source ?? 'cache' };
     }
     console.warn('[weather] returning fallback weather');
-    return buildFallback(lat, lon);
+    return await buildFallback(lat, lon);
   }
 }
 
@@ -73,9 +73,25 @@ async function fetchKmaUltraNow(serviceKey, nx, ny, lat, lon) {
     ny: String(ny)
   });
   const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?${params.toString()}`;
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    throw new Error(`KMA error: ${resp.status}`);
+  
+  // Add timeout to prevent long waits
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5초 타임아웃
+  
+  let resp;
+  try {
+    resp = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    
+    if (!resp.ok) {
+      throw new Error(`KMA error: ${resp.status}`);
+    }
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('KMA API timeout');
+    }
+    throw error;
   }
   const j = await resp.json();
   const items = j?.response?.body?.items?.item || [];
@@ -180,8 +196,31 @@ async function reverseGeocode(lat, lon) {
   return { city, country, district, subLocality };
 }
 
-function buildFallback(lat, lon) {
+async function buildFallback(lat, lon) {
   const nowIso = new Date().toISOString();
+  
+  // Try to get location info from reverse geocoding
+  let locationInfo = {
+    city: '',
+    country: '',
+    district: '',
+    subLocality: '',
+  };
+  
+  try {
+    const place = await reverseGeocode(lat, lon);
+    if (place) {
+      locationInfo = {
+        city: place.city || '',
+        country: place.country || '',
+        district: place.district || '',
+        subLocality: place.subLocality || '',
+      };
+    }
+  } catch (e) {
+    console.warn('[weather] reverse geocoding failed in fallback:', e.message);
+  }
+  
   return {
     timestamp: nowIso,
     temperature: 22,
@@ -196,10 +235,10 @@ function buildFallback(lat, lon) {
     location: {
       latitude: lat,
       longitude: lon,
-      city: '',
-      country: '',
-      district: '',
-      subLocality: '',
+      city: locationInfo.city,
+      country: locationInfo.country,
+      district: locationInfo.district,
+      subLocality: locationInfo.subLocality,
     },
     source: 'fallback',
     cached: false,

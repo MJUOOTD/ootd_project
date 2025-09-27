@@ -51,7 +51,6 @@ class _BasicInfoStepState extends ConsumerState<BasicInfoStep> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isComplete = ref.watch(basicInfoValidationProvider);
 
     return Form(
       key: _formKey,
