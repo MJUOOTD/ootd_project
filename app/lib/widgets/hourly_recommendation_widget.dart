@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/recommendation_provider.dart';
 
-class HourlyRecommendationWidget extends StatelessWidget {
+class HourlyRecommendationWidget extends ConsumerWidget {
   const HourlyRecommendationWidget({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recommendationState = ref.watch(recommendationProvider);
     final now = DateTime.now();
 
     return Container(

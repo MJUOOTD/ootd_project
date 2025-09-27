@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/pexels_api_service.dart';
+import '../providers/recommendation_provider.dart';
 
 class SituationRecommendationWidget extends ConsumerStatefulWidget {
   const SituationRecommendationWidget({super.key});
