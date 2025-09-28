@@ -8,6 +8,7 @@ import '../widgets/hourly_recommendation_widget.dart';
 import '../widgets/situation_recommendation_widget.dart';
 import 'notification_list_screen.dart';
 import 'cart_screen.dart';
+import 'city_search_screen.dart';
 import '../widgets/feedback_modal.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -28,9 +29,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _initializeData() async {
-    // ChangeNotifierProvider는 .notifier가 아닌 인스턴스에 직접 호출
-    final weatherSvc = ref.read(weatherProvider);
-    await weatherSvc.fetchCurrentWeather();
+    // StateNotifierProvider는 .notifier를 사용
+    final weatherNotifier = ref.read(weatherProvider.notifier);
+    await weatherNotifier.fetchCurrentWeather();
     if (!mounted) return;
 
     // Read the provider's state to check values.
@@ -48,9 +49,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _refreshData() async {
-    // ChangeNotifierProvider는 .notifier가 아닌 인스턴스에 직접 호출
-    final weatherSvc = ref.read(weatherProvider);
-    await weatherSvc.refreshWeather();
+    // StateNotifierProvider는 .notifier를 사용
+    final weatherNotifier = ref.read(weatherProvider.notifier);
+    await weatherNotifier.refreshWeather();
     if (!mounted) return;
 
     final userState = ref.read(userProvider);
@@ -162,26 +163,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
             if (weatherState.error != null) {
               return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error: ${weatherState.error}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _refreshData,
-                      child: const Text('Retry'),
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.location_off,
+                        size: 64,
+                        color: Colors.orange,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        weatherState.error!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const CitySearchScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.search),
+                            label: const Text('도시 검색'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF5B6CFF),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                              minimumSize: const Size(200, 50),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          OutlinedButton.icon(
+                            onPressed: _refreshData,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('새로고침'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                              minimumSize: const Size(200, 50),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               );
             }

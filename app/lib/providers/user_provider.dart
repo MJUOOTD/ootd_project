@@ -347,6 +347,6 @@ final authStateListenerProvider = StreamProvider<void>((ref) {
       // 로그아웃 시에는 사용자 상태만 초기화
       ref.read(userProvider.notifier).clearUser();
     }
-    return null;
+    return;
   });
 });

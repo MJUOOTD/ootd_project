@@ -1,11 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/weather_provider.dart';
+import '../screens/city_search_screen.dart';
 
-class HourlyRecommendationWidget extends StatelessWidget {
+class HourlyRecommendationWidget extends ConsumerStatefulWidget {
   const HourlyRecommendationWidget({super.key});
+
+  @override
+  ConsumerState<HourlyRecommendationWidget> createState() => _HourlyRecommendationWidgetState();
+}
+
+class _HourlyRecommendationWidgetState extends ConsumerState<HourlyRecommendationWidget> {
+  bool _hasShownDialog = false;
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
+    final weatherState = ref.watch(weatherProvider);
+    final forecast = weatherState.forecast;
+    final error = weatherState.error;
+    
+    // 위치 권한이 없는 경우 안내 메시지 표시
+    final hasLocationPermissionError = error != null && 
+        (error.contains('현재 위치를 불러올 수 없음') || error.contains('위치 권한') || error.contains('permission') || error.contains('Permission') || error.contains('LocationException'));
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -53,72 +70,95 @@ class HourlyRecommendationWidget extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // 가로 스크롤 시간대 카드
-            SizedBox(
-              height: 100,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: 20, // 현재 시간부터 20시간
-                itemBuilder: (context, index) {
-                  final displayHour = (now.hour + index) % 24;
-                  final timeSlot = _getTimeSlot(displayHour);
-                  final weatherEmoji = _getWeatherEmoji(displayHour);
-                  final recommendation = _getRecommendation(displayHour);
-                  final temperature = _getTemperature(displayHour);
-
-                  return Container(
-                    width: 80,
-                    height: 100,
-                    margin: const EdgeInsets.only(right: 16),
-                    child: InkWell(
-                      onTap: () => _showAlternativeOptions(context, displayHour),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            index == 0 ? '지금' : timeSlot,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            weatherEmoji,
-                            style: const TextStyle(fontSize: 20),
-                          ),
-                          const SizedBox(height: 4),
-                          Flexible(
-                            child: Text(
-                              recommendation,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: Colors.black,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '$temperature°',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Colors.black,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
+            // 위치 권한이 없는 경우 팝업 표시
+            if (hasLocationPermissionError) ...[
+              // 위치 권한 오류 시 팝업 표시 (한 번만)
+              if (!_hasShownDialog) 
+                Builder(
+                  builder: (context) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        setState(() {
+                          _hasShownDialog = true;
+                        });
+                        _showLocationPermissionDialog(context);
+                      }
+                    });
+                    return const SizedBox.shrink();
+                  },
+                ),
+              // 위치 권한 오류 시 빈 컨테이너 표시
+              Container(
+                height: 100,
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Center(
+                  child: Text(
+                    '현재 위치를 불러올 수 없음',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
-            ),
+            ] else ...[
+              // 가로 스크롤 시간대 카드
+              SizedBox(
+                height: 100,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: forecast.isNotEmpty ? forecast.length : 20,
+                  itemBuilder: (context, index) {
+                    if (forecast.isNotEmpty && index < forecast.length) {
+                      // 백엔드에서 이미 정렬된 데이터를 사용
+                      final weather = forecast[index];
+                      
+                      // timestamp는 WeatherModel에서 DateTime으로 변환되어 있음
+                      final weatherTime = weather.timestamp;
+                      
+                      final displayHour = weatherTime.hour;
+                      final displayMinute = weatherTime.minute;
+                      final timeSlot = _getTimeSlot(displayHour, displayMinute);
+                      final weatherEmoji = _getWeatherEmojiFromCondition(weather.condition);
+                      final recommendation = _getRecommendationFromTemperature(weather.temperature);
+                      final temperature = weather.temperature.round();
+                      
+                      print('[HourlyWidget] Item $index: ${weatherTime} - ${timeSlot} - ${weather.isCurrent ? 'CURRENT' : 'FUTURE'}');
+                      
+                      return _buildHourlyCard(
+                        context, 
+                        timeSlot, 
+                        weatherEmoji, 
+                        recommendation, 
+                        temperature, 
+                        displayHour,
+                        weather.isCurrent
+                      );
+                    } else {
+                      // fallback: 기존 mock 데이터
+                      final displayHour = (now.hour + index) % 24;
+                      final timeSlot = _getTimeSlot(displayHour);
+                      final weatherEmoji = _getWeatherEmoji(displayHour);
+                      final recommendation = _getRecommendation(displayHour);
+                      final temperature = _getTemperature(displayHour);
+                      
+                      return _buildHourlyCard(
+                        context, 
+                        timeSlot, 
+                        weatherEmoji, 
+                        recommendation, 
+                        temperature, 
+                        displayHour,
+                        false
+                      );
+                    }
+                  },
+                ),
+              ),
+            ],
 
             const SizedBox(height: 16),
 
@@ -146,34 +186,108 @@ class HourlyRecommendationWidget extends StatelessWidget {
     );
   }
 
-  String _getTimeSlot(int hour) {
+  Widget _buildHourlyCard(
+    BuildContext context,
+    String timeSlot,
+    String weatherEmoji,
+    String recommendation,
+    int temperature,
+    int displayHour,
+    bool isCurrent,
+  ) {
+    return Container(
+      width: 80,
+      height: 100,
+      margin: const EdgeInsets.only(right: 16),
+      child: InkWell(
+        onTap: () => _showAlternativeOptions(context, displayHour),
+        borderRadius: BorderRadius.circular(8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              isCurrent ? '지금' : timeSlot,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              weatherEmoji,
+              style: const TextStyle(fontSize: 24),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              recommendation,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: Colors.black54,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '$temperature°',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getTimeSlot(int hour, [int? minute]) {
     final displayHour = hour % 24;
+    if (minute != null) {
+      return '${displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+    }
     return '${displayHour.toString().padLeft(2, '0')}:00';
   }
 
+
+  String _getWeatherEmojiFromCondition(String condition) {
+    const iconMap = {
+      'Clear': '☀️',
+      'Clouds': '☁️',
+      'Rain': '🌧️',
+      'Snow': '❄️',
+      'Thunderstorm': '⛈️',
+      'Fog': '🌫️',
+    };
+    return iconMap[condition] ?? '🌤️';
+  }
+
+  String _getRecommendationFromTemperature(double temperature) {
+    if (temperature < 0) return '패딩';
+    if (temperature < 5) return '코트';
+    if (temperature < 10) return '자켓';
+    if (temperature < 15) return '가디건';
+    if (temperature < 20) return '긴팔';
+    if (temperature < 25) return '반팔';
+    return '민소매';
+  }
+
+  // 기존 mock 데이터 메서드들 (fallback용)
   String _getWeatherEmoji(int hour) {
-    // 실제 날씨 이모티콘 반환 (비, 맑음, 눈 등) - 데모용
     const weatherConditions = [
-      '☔', // 비
-      '🌞', // 맑음
-      '❄', // 눈
-      '⛅', // 구름
-      '🌧', // 소나기
-      '🌤', // 맑음
-      '☁', // 흐림
-      '🌦', // 소나기
+      '☔', '🌞', '❄', '⛅', '🌧', '🌤', '☁', '🌦',
     ];
     final weatherIndex = hour % weatherConditions.length;
     return weatherConditions[weatherIndex];
   }
 
   String _getRecommendation(int hour) {
-    // 시간대별 추천 옷차림 (데모용)
     return '반팔티';
   }
 
   int _getTemperature(int hour) {
-    // 간단 체감온도 데모
     final h = hour % 24;
     if (h < 6) return 22;
     if (h < 12) return 24;
@@ -182,221 +296,76 @@ class HourlyRecommendationWidget extends StatelessWidget {
   }
 
   void _showAlternativeOptions(BuildContext context, int hour) {
-    final timeSlot = hour == DateTime.now().hour ? '지금' : _getTimeSlot(hour);
-    final weatherEmoji = _getWeatherEmoji(hour);
-    final temperature = _getTemperature(hour);
-    final currentRecommendation = _getRecommendation(hour);
-    
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Text('👕', style: TextStyle(fontSize: 20)),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$timeSlot 추천 대체 옷차림',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, size: 20),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              
-              // Current recommendation
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[200]!),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$timeSlot 기본 추천',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Text(weatherEmoji, style: const TextStyle(fontSize: 24)),
-                        const SizedBox(width: 12),
-                        Text(
-                          '$currentRecommendation - $temperature℃',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Alternative options
-              const Text(
-                '다른 옷차림 옵션',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 12),
-              
-              ..._getAlternativeOptionsWithDetails(hour).map(
-                (option) => Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: InkWell(
-                    onTap: () => Navigator.pop(context),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[200]!),
-                      ),
-                      child: Row(
-                        children: [
-                          Text(option.icon, style: const TextStyle(fontSize: 20)),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  option.name,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  option.description,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Bottom tip
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.yellow[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.yellow[200]!),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.lightbulb_outline, size: 16, color: Colors.orange),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        '체온 민감도와 개인 취향에 따라 선택하세요',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.orange,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${hour.toString().padLeft(2, '0')}:00 옷차림 옵션'),
+            const SizedBox(height: 16),
+            const Text('추가 옵션들이 여기에 표시됩니다.'),
+          ],
         ),
       ),
     );
   }
 
-
-  List<AlternativeOption> _getAlternativeOptionsWithDetails(int hour) {
-    final weatherEmoji = _getWeatherEmoji(hour);
-
-    if (weatherEmoji == '☔' || weatherEmoji == '🌧' || weatherEmoji == '🌦') {
-      return [
-        AlternativeOption('☔', '우산', '비를 막아주는 필수 아이템'),
-        AlternativeOption('👢', '레인부츠', '물에 젖지 않는 신발'),
-        AlternativeOption('🧥', '방수재킷', '완전 방수 기능의 외투'),
-      ];
-    } else if (weatherEmoji == '❄') {
-      return [
-        AlternativeOption('🧣', '목도리', '목을 따뜻하게 보호'),
-        AlternativeOption('🧤', '장갑', '손을 따뜻하게 유지'),
-        AlternativeOption('🧥', '두꺼운 코트', '추위를 막는 보온 외투'),
-      ];
-    } else if (weatherEmoji == '🌞' || weatherEmoji == '🌤') {
-      return [
-        AlternativeOption('👕', '얇은 긴팔', '시원하고 가벼운 재질'),
-        AlternativeOption('👗', '민소매', '더 시원한 착용감'),
-        AlternativeOption('👔', '린넨 셔츠', '통기성이 좋은 소재'),
-      ];
-    } else if (weatherEmoji == '⛅' || weatherEmoji == '☁') {
-      return [
-        AlternativeOption('🧥', '가디건', '간편한 보온 아이템'),
-        AlternativeOption('👕', '스웨터', '따뜻하고 편안한 착용감'),
-        AlternativeOption('🧥', '야상', '활동하기 좋은 외투'),
-      ];
-    } else {
-      return [
-        AlternativeOption('👕', '얇은 긴팔', '시원하고 가벼운 재질'),
-        AlternativeOption('👗', '민소매', '더 시원한 착용감'),
-        AlternativeOption('👔', '린넨 셔츠', '통기성이 좋은 소재'),
-      ];
-    }
+  void _showLocationPermissionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                Icons.location_off,
+                color: Colors.orange[600],
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              const Text('위치 권한 필요'),
+            ],
+          ),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '현재 위치 정보를 동의하지 않아 정확한 날씨 정보 제공이 어렵습니다.',
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 12),
+              Text(
+                '더보기 버튼을 눌러 검색을 통해 원하는 위치의 날씨를 확인하세요.',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('확인'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // 위치 검색 화면으로 이동
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const CitySearchScreen(),
+                  ),
+                );
+              },
+              child: const Text('위치 검색'),
+            ),
+          ],
+        );
+      },
+    );
   }
-}
-
-class AlternativeOption {
-  final String icon;
-  final String name;
-  final String description;
-
-  AlternativeOption(this.icon, this.name, this.description);
 }

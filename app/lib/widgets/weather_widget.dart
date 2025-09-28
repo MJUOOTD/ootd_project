@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ootd_app/providers/weather_provider.dart';
 import 'package:ootd_app/models/weather_model.dart';
+import '../screens/city_search_screen.dart';
 
-class WeatherWidget extends ConsumerWidget {
+class WeatherWidget extends ConsumerStatefulWidget {
   final WeatherModel? weather;
   final VoidCallback? onRefresh;
 
@@ -14,13 +15,38 @@ class WeatherWidget extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WeatherWidget> createState() => _WeatherWidgetState();
+}
+
+class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
+  bool _hasShownDialog = false;
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(weatherProvider);
-    final w = weather ?? state.currentWeather;
+    final w = widget.weather ?? state.currentWeather;
     final isLoading = state.isLoading;
+    final error = state.error;
 
     if (isLoading) return _buildSkeleton();
     if (w == null) return _buildEmpty();
+    
+    // 위치 권한이 없는 경우 안내 메시지 표시
+    final hasLocationPermissionError = error != null && 
+        (error.contains('현재 위치를 불러올 수 없음') || error.contains('위치 권한') || error.contains('permission') || error.contains('Permission') || error.contains('LocationException'));
+    
+    // 에러가 있지만 날씨 데이터가 있는 경우 (fallback 상황)
+    final hasError = error != null && error.isNotEmpty && !hasLocationPermissionError;
+    
+    // 위치 권한 오류 시 팝업 표시 (한 번만)
+    if (hasLocationPermissionError && !_hasShownDialog) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _hasShownDialog = true;
+          _showLocationPermissionDialog(context);
+        }
+      });
+    }
     
     return Container(
       padding: const EdgeInsets.all(20),
@@ -60,40 +86,127 @@ class WeatherWidget extends ConsumerWidget {
                   ),
                 ],
               ),
-              Text(
-                '${w.temperature.round()}°C',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2C3E50),
-                ),
+              Row(
+                children: [
+                  Text(
+                    '${w.temperature.round()}°C',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2C3E50),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (widget.onRefresh != null)
+                    GestureDetector(
+                      onTap: widget.onRefresh,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[50],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          Icons.refresh,
+                          color: Colors.blue[600],
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () => _showCitySearch(context, ref),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.more_horiz,
+                        color: Colors.grey[600],
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
           
           const SizedBox(height: 8),
           
-          // 현재 위치 표시
-          Row(
-            children: [
-              Icon(
-                Icons.location_on,
-                color: Colors.grey[500],
-                size: 14,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                w.location.formattedLocation.isNotEmpty 
-                    ? w.location.formattedLocation 
-                    : '위치 정보 없음',
-                style: TextStyle(
+        // 현재 위치 표시
+        Builder(
+          builder: (context) {
+            print('[WeatherWidget] Location debug:');
+            print('[WeatherWidget] - city: "${w.location.city}"');
+            print('[WeatherWidget] - country: "${w.location.country}"');
+            print('[WeatherWidget] - district: "${w.location.district}"');
+            print('[WeatherWidget] - subLocality: "${w.location.subLocality}"');
+            print('[WeatherWidget] - formattedLocation: "${w.location.formattedLocation}"');
+            
+            return Row(
+              children: [
+                Icon(
+                  Icons.location_on,
                   color: Colors.grey[500],
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
+                  size: 14,
                 ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    hasLocationPermissionError 
+                        ? '현재 위치를 불러올 수 없음'
+                        : (w.location.formattedLocation.isNotEmpty 
+                            ? w.location.formattedLocation 
+                            : '위치 정보 없음'),
+                    style: TextStyle(
+                      color: Colors.grey[500],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+          
+          
+          // 에러 메시지 표시 (fallback 상황)
+          if (hasError) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange[200]!),
               ),
-            ],
-          ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.orange[600],
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      error,
+                      style: TextStyle(
+                        color: Colors.orange[700],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          
           const SizedBox(height: 12),
           
           // Weather Info
@@ -428,5 +541,69 @@ class WeatherWidget extends ConsumerWidget {
     } else {
       return '두꺼운 옷을 입으세요. 코트, 패딩 추천';
     }
+  }
+
+  void _showCitySearch(BuildContext context, WidgetRef ref) async {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const CitySearchScreen(),
+      ),
+    );
+  }
+
+  void _showLocationPermissionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                Icons.location_off,
+                color: Colors.orange[600],
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              const Text('위치 권한 필요'),
+            ],
+          ),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '현재 위치 정보를 동의하지 않아 정확한 날씨 정보 제공이 어렵습니다.',
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 12),
+              Text(
+                '더보기 버튼을 눌러 검색을 통해 원하는 위치의 날씨를 확인하세요.',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('확인'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const CitySearchScreen(),
+                  ),
+                );
+              },
+              child: const Text('위치 검색'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

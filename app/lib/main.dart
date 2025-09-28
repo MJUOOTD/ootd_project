@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'app_router.dart';
 import 'services/service_locator.dart';
+import 'services/favorites_service.dart';
 import 'theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'package:flutter/foundation.dart';
@@ -29,6 +30,8 @@ void main() async {
   await serviceLocator.initialize();
   // Pexels API 키 설정
   PexelsApiService.setApiKey('QwYk7NDUowPtA83vo1RHNYSHCWWnDTd8MNlm8giDiGq8blf1iPAHu1DP');
+  // 즐겨찾기 서비스 초기화
+  await FavoritesService.initialize();
   
   runApp(
     ProviderScope(

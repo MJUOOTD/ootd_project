@@ -110,13 +110,19 @@ class WeatherCard extends ConsumerWidget {
                     color: Colors.blue,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(
-                    '${weather.temperature.toInt()}°C',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Builder(
+                    builder: (context) {
+                      final temp = weather.temperature.round();
+                      print('[WeatherCard] Displaying temperature: $temp°C (raw: ${weather.temperature})');
+                      return Text(
+                        '$temp°C',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: 8),

@@ -14,6 +14,7 @@ class WeatherModel {
   final Location location;
   final String? source; // e.g., 'kma'
   final bool? cached;   // whether response came from cache
+  final bool isCurrent; // whether this is the current time forecast
 
   WeatherModel({
     required this.temperature,
@@ -29,23 +30,24 @@ class WeatherModel {
     required this.location,
     this.source,
     this.cached,
+    this.isCurrent = false,
   });
 
   factory WeatherModel.fromJson(Map<String, dynamic> json) {
-    double _asDouble(dynamic v) {
+    double asDouble(dynamic v) {
       if (v == null) return 0.0;
       if (v is num) return v.toDouble();
       if (v is String) return double.tryParse(v) ?? 0.0;
       return 0.0;
     }
-    int _asInt(dynamic v) {
+    int asInt(dynamic v) {
       if (v == null) return 0;
       if (v is int) return v;
       if (v is num) return v.toInt();
       if (v is String) return int.tryParse(v) ?? (double.tryParse(v)?.round() ?? 0);
       return 0;
     }
-    String _asString(dynamic v) => v == null ? '' : v.toString();
+    String asString(dynamic v) => v == null ? '' : v.toString();
 
     final ts = json['timestamp'];
     final DateTime parsedTs = ts is String && ts.isNotEmpty
@@ -53,19 +55,20 @@ class WeatherModel {
         : DateTime.now();
 
     return WeatherModel(
-      temperature: _asDouble(json['temperature']),
-      feelsLike: _asDouble(json['feelsLike']),
-      humidity: _asInt(json['humidity']),
-      windSpeed: _asDouble(json['windSpeed']),
-      windDirection: _asInt(json['windDirection']),
-      precipitation: _asDouble(json['precipitation']),
-      condition: _asString(json['condition']),
-      description: _asString(json['description']),
-      icon: _asString(json['icon']),
+      temperature: asDouble(json['temperature']),
+      feelsLike: asDouble(json['feelsLike']),
+      humidity: asInt(json['humidity']),
+      windSpeed: asDouble(json['windSpeed']),
+      windDirection: asInt(json['windDirection']),
+      precipitation: asDouble(json['precipitation']),
+      condition: asString(json['condition']),
+      description: asString(json['description']),
+      icon: asString(json['icon']),
       timestamp: parsedTs,
       location: Location.fromJson(json['location'] ?? {}),
       source: json['source'],
       cached: json['cached'],
+      isCurrent: json['isCurrent'] ?? false,
     );
   }
 
@@ -100,6 +103,7 @@ class WeatherModel {
       'location': location.toJson(),
       'source': source,
       'cached': cached,
+      'isCurrent': isCurrent,
     };
   }
 
@@ -149,8 +153,9 @@ class Location {
   final double longitude;
   final String city;
   final String country;
-  final String? district;     // 구
-  final String? subLocality;  // 동
+  final String? district;     // 구/군
+  final String? subLocality;  // 동/리
+  final String? province;     // 시/도
 
   Location({
     required this.latitude,
@@ -159,6 +164,7 @@ class Location {
     required this.country,
     this.district,
     this.subLocality,
+    this.province,
   });
 
   factory Location.fromJson(Map<String, dynamic> json) {
@@ -169,6 +175,7 @@ class Location {
       country: json['country'] ?? '',
       district: json['district'],
       subLocality: json['subLocality'],
+      province: json['province'],
     );
   }
 
@@ -180,15 +187,24 @@ class Location {
       'country': country,
       'district': district,
       'subLocality': subLocality,
+      'province': province,
     };
   }
 
-  // Get formatted location string with district only
+  // Get formatted location string with accurate Korean address system
   String get formattedLocation {
     List<String> parts = [];
     
-    if (city.isNotEmpty) parts.add(city);
-    if (district != null && district!.isNotEmpty) parts.add(district!);
+    // 한국 주소 체계에 맞게 표시: 시/도/군/구/동/리
+    if (city.isNotEmpty) {
+      parts.add(city);
+    }
+    if (district != null && district!.isNotEmpty) {
+      parts.add(district!);
+    }
+    if (subLocality != null && subLocality!.isNotEmpty) {
+      parts.add(subLocality!);
+    }
     
     return parts.join(' ');
   }

@@ -1,4 +1,5 @@
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart' hide Location;
 import '../../../models/weather_model.dart';
 
 /// Location service interface for handling GPS and location permissions
@@ -41,6 +42,12 @@ abstract class LocationService {
 
   /// Open device location settings
   Future<void> openLocationSettings();
+
+  /// Get location stream for continuous updates
+  Stream<Location> getLocationStream();
+
+  /// Check if location has changed significantly
+  bool hasLocationChanged(Location oldLocation, Location newLocation, {double thresholdMeters = 100});
 }
 
 /// Location permission status enum
@@ -93,9 +100,14 @@ class RealLocationService implements LocationService {
   @override
   Future<Location> getCurrentLocation() async {
     try {
+      print('[RealLocationService] ===== LOCATION REQUEST START =====');
+      print('[RealLocationService] Starting location request...');
+      
       // Check if location services are enabled
       bool serviceEnabled = await isLocationServiceEnabled();
+      print('[RealLocationService] Location service enabled: $serviceEnabled');
       if (!serviceEnabled) {
+        print('[RealLocationService] Location service is DISABLED!');
         throw LocationException(
           'Location services are disabled. Please enable location services.',
           LocationErrorType.serviceDisabled,
@@ -104,37 +116,121 @@ class RealLocationService implements LocationService {
 
       // Check permission status
       LocationPermissionStatus permissionStatus = await checkPermissionStatus();
+      print('[RealLocationService] Permission status: $permissionStatus');
+      
       if (permissionStatus == LocationPermissionStatus.denied) {
+        print('[RealLocationService] Requesting permission...');
         bool granted = await requestPermission();
+        print('[RealLocationService] Permission granted: $granted');
         if (!granted) {
-          throw LocationException(
-            'Location permission denied. Please grant location permission.',
-            LocationErrorType.permissionDenied,
-          );
+          // 권한이 거부되었지만 다시 한번 확인
+          LocationPermissionStatus recheckStatus = await checkPermissionStatus();
+          print('[RealLocationService] Recheck permission status: $recheckStatus');
+          if (recheckStatus == LocationPermissionStatus.denied) {
+            throw LocationException(
+              'Location permission denied. Please grant location permission.',
+              LocationErrorType.permissionDenied,
+            );
+          }
         }
       }
 
       if (permissionStatus == LocationPermissionStatus.deniedForever) {
+        print('[RealLocationService] Permission permanently denied, opening settings...');
+        await openLocationSettings();
         throw LocationException(
           'Location permission permanently denied. Please enable in settings.',
           LocationErrorType.permissionDenied,
         );
       }
 
-      // Get current position
+      // Get current position with high accuracy
+      print('[RealLocationService] Getting current position...');
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
+        desiredAccuracy: LocationAccuracy.best,
+        timeLimit: const Duration(seconds: 30),
+        forceAndroidLocationManager: false,
       );
 
-      // For now, we'll use a default city name. In a real app, you'd use reverse geocoding
+      print('[RealLocationService] Position obtained: lat=${position.latitude}, lon=${position.longitude}');
+
+      // 역지오코딩을 사용하여 정확한 주소 정보 가져오기
+      String cityName = 'Current Location';
+      String countryName = 'Unknown';
+      
+      try {
+        print('[RealLocationService] Starting reverse geocoding...');
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+          position.latitude, 
+          position.longitude
+        );
+        
+        if (placemarks.isNotEmpty) {
+          Placemark place = placemarks.first;
+          print('[RealLocationService] Placemark data: ${place.toString()}');
+          
+          // 도시명 우선순위: locality > subLocality > administrativeArea
+          cityName = place.locality ?? 
+                    place.subLocality ?? 
+                    place.administrativeArea ?? 
+                    'Current Location';
+          
+          // 국가명
+          countryName = place.country ?? 'Unknown';
+          
+          // 한국의 경우 한국어로 표시
+          if (countryName == 'South Korea' || countryName == '대한민국') {
+            countryName = '대한민국';
+            // 한국 주요 도시 한국어 표시
+            if (cityName == 'Seoul' || cityName == '서울특별시') {
+              cityName = '서울';
+            } else if (cityName == 'Busan' || cityName == '부산광역시') {
+              cityName = '부산';
+            } else if (cityName == 'Daegu' || cityName == '대구광역시') {
+              cityName = '대구';
+            } else if (cityName == 'Incheon' || cityName == '인천광역시') {
+              cityName = '인천';
+            } else if (cityName == 'Gwangju' || cityName == '광주광역시') {
+              cityName = '광주';
+            } else if (cityName == 'Daejeon' || cityName == '대전광역시') {
+              cityName = '대전';
+            } else if (cityName == 'Ulsan' || cityName == '울산광역시') {
+              cityName = '울산';
+            } else if (cityName == 'Sejong' || cityName == '세종특별자치시') {
+              cityName = '세종';
+            }
+          }
+          
+          print('[RealLocationService] Reverse geocoding result: $cityName, $countryName');
+        } else {
+          print('[RealLocationService] No placemarks found, using coordinates');
+          cityName = 'Current Location';
+          countryName = 'Unknown';
+        }
+      } catch (e) {
+        print('[RealLocationService] Reverse geocoding failed: $e');
+        // 역지오코딩 실패 시 좌표 기반으로 fallback
+        cityName = 'Current Location';
+        countryName = 'Unknown';
+      }
+
+      print('[RealLocationService] Final location: $cityName, $countryName');
+      print('[RealLocationService] Coordinates: lat=${position.latitude}, lon=${position.longitude}');
+      print('[RealLocationService] Accuracy: ${position.accuracy}m');
+      print('[RealLocationService] Altitude: ${position.altitude}m');
+      print('[RealLocationService] ===== LOCATION REQUEST SUCCESS =====');
+
       return Location(
         latitude: position.latitude,
         longitude: position.longitude,
-        city: 'Current Location', // TODO: Implement reverse geocoding
-        country: 'Unknown', // TODO: Implement reverse geocoding
+        city: cityName,
+        country: countryName,
       );
     } catch (e) {
+      print('[RealLocationService] ===== LOCATION REQUEST FAILED =====');
+      print('[RealLocationService] Error getting location: $e');
+      print('[RealLocationService] Error type: ${e.runtimeType}');
+      print('[RealLocationService] Error stack: ${e.toString()}');
       if (e is LocationException) {
         rethrow;
       }
@@ -185,11 +281,62 @@ class RealLocationService implements LocationService {
         timeLimit: timeout,
       );
 
+      // 역지오코딩을 사용하여 정확한 주소 정보 가져오기
+      String cityName = 'Current Location';
+      String countryName = 'Unknown';
+      
+      try {
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+          position.latitude, 
+          position.longitude
+        );
+        
+        if (placemarks.isNotEmpty) {
+          Placemark place = placemarks.first;
+          
+          // 도시명 우선순위: locality > subLocality > administrativeArea
+          cityName = place.locality ?? 
+                    place.subLocality ?? 
+                    place.administrativeArea ?? 
+                    'Current Location';
+          
+          // 국가명
+          countryName = place.country ?? 'Unknown';
+          
+          // 한국의 경우 한국어로 표시
+          if (countryName == 'South Korea' || countryName == '대한민국') {
+            countryName = '대한민국';
+            // 한국 주요 도시 한국어 표시
+            if (cityName == 'Seoul' || cityName == '서울특별시') {
+              cityName = '서울';
+            } else if (cityName == 'Busan' || cityName == '부산광역시') {
+              cityName = '부산';
+            } else if (cityName == 'Daegu' || cityName == '대구광역시') {
+              cityName = '대구';
+            } else if (cityName == 'Incheon' || cityName == '인천광역시') {
+              cityName = '인천';
+            } else if (cityName == 'Gwangju' || cityName == '광주광역시') {
+              cityName = '광주';
+            } else if (cityName == 'Daejeon' || cityName == '대전광역시') {
+              cityName = '대전';
+            } else if (cityName == 'Ulsan' || cityName == '울산광역시') {
+              cityName = '울산';
+            } else if (cityName == 'Sejong' || cityName == '세종특별자치시') {
+              cityName = '세종';
+            }
+          }
+        }
+      } catch (e) {
+        print('[RealLocationService] Reverse geocoding failed in getLocationWithAccuracy: $e');
+        cityName = 'Current Location';
+        countryName = 'Unknown';
+      }
+
       return Location(
         latitude: position.latitude,
         longitude: position.longitude,
-        city: 'Current Location', // TODO: Implement reverse geocoding
-        country: 'Unknown', // TODO: Implement reverse geocoding
+        city: cityName,
+        country: countryName,
       );
     } catch (e) {
       if (e is LocationException) {
@@ -212,6 +359,85 @@ class RealLocationService implements LocationService {
     await Geolocator.openLocationSettings();
   }
 
+  @override
+  Stream<Location> getLocationStream() async* {
+    const LocationSettings locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 10, // 10미터 이상 이동 시에만 업데이트
+    );
+
+    await for (final position in Geolocator.getPositionStream(locationSettings: locationSettings)) {
+      // 역지오코딩을 사용하여 정확한 주소 정보 가져오기
+      String cityName = 'Current Location';
+      String countryName = 'Unknown';
+      
+      try {
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+          position.latitude, 
+          position.longitude
+        );
+        
+        if (placemarks.isNotEmpty) {
+          Placemark place = placemarks.first;
+          
+          // 도시명 우선순위: locality > subLocality > administrativeArea
+          cityName = place.locality ?? 
+                    place.subLocality ?? 
+                    place.administrativeArea ?? 
+                    'Current Location';
+          
+          // 국가명
+          countryName = place.country ?? 'Unknown';
+          
+          // 한국의 경우 한국어로 표시
+          if (countryName == 'South Korea' || countryName == '대한민국') {
+            countryName = '대한민국';
+            // 한국 주요 도시 한국어 표시
+            if (cityName == 'Seoul' || cityName == '서울특별시') {
+              cityName = '서울';
+            } else if (cityName == 'Busan' || cityName == '부산광역시') {
+              cityName = '부산';
+            } else if (cityName == 'Daegu' || cityName == '대구광역시') {
+              cityName = '대구';
+            } else if (cityName == 'Incheon' || cityName == '인천광역시') {
+              cityName = '인천';
+            } else if (cityName == 'Gwangju' || cityName == '광주광역시') {
+              cityName = '광주';
+            } else if (cityName == 'Daejeon' || cityName == '대전광역시') {
+              cityName = '대전';
+            } else if (cityName == 'Ulsan' || cityName == '울산광역시') {
+              cityName = '울산';
+            } else if (cityName == 'Sejong' || cityName == '세종특별자치시') {
+              cityName = '세종';
+            }
+          }
+        }
+      } catch (e) {
+        print('[RealLocationService] Reverse geocoding failed in stream: $e');
+        cityName = 'Current Location';
+        countryName = 'Unknown';
+      }
+
+      yield Location(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        city: cityName,
+        country: countryName,
+      );
+    }
+  }
+
+  @override
+  bool hasLocationChanged(Location oldLocation, Location newLocation, {double thresholdMeters = 100}) {
+    final distance = Geolocator.distanceBetween(
+      oldLocation.latitude,
+      oldLocation.longitude,
+      newLocation.latitude,
+      newLocation.longitude,
+    );
+    return distance > thresholdMeters;
+  }
+
   // Helper method to convert geolocator permission to our enum
   LocationPermissionStatus _convertPermissionStatus(LocationPermission permission) {
     switch (permission) {
@@ -228,55 +454,3 @@ class RealLocationService implements LocationService {
   }
 }
 
-/// Mock implementation of LocationService for development
-class MockLocationService implements LocationService {
-  @override
-  Future<bool> isLocationServiceEnabled() async {
-    return true; // Mock: always enabled
-  }
-
-  @override
-  Future<LocationPermissionStatus> checkPermissionStatus() async {
-    return LocationPermissionStatus.granted; // Mock: always granted
-  }
-
-  @override
-  Future<bool> requestPermission() async {
-    return true; // Mock: always granted
-  }
-
-  @override
-  Future<Location> getCurrentLocation() async {
-    // Mock data for development
-    return Location(
-      latitude: 37.5665,
-      longitude: 126.9780,
-      city: 'Seoul',
-      country: 'KR',
-    );
-  }
-
-  @override
-  Future<Location> getLocationWithAccuracy({
-    double desiredAccuracy = 10.0,
-    Duration timeout = const Duration(seconds: 10),
-  }) async {
-    // Mock data for development
-    return Location(
-      latitude: 37.5665,
-      longitude: 126.9780,
-      city: 'Seoul',
-      country: 'KR',
-    );
-  }
-
-  @override
-  bool isPermissionPermanentlyDenied(LocationPermissionStatus status) {
-    return status == LocationPermissionStatus.deniedForever;
-  }
-
-  @override
-  Future<void> openLocationSettings() async {
-    throw UnimplementedError('openLocationSettings not implemented in mock');
-  }
-}

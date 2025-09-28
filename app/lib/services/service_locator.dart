@@ -1,6 +1,6 @@
 import 'location/location_service.dart';
 import 'weather/weather_service.dart';
-import 'weather/backend_weather_service.dart';
+import 'weather/optimized_weather_service.dart';
 
 /// Service locator for dependency injection
 /// 
@@ -29,7 +29,7 @@ class ServiceLocator {
 
   /// Get weather service instance
   WeatherService get weatherService {
-    _weatherService ??= BackendWeatherService();
+    _weatherService ??= OptimizedWeatherService();
     return _weatherService!;
   }
 
@@ -38,7 +38,7 @@ class ServiceLocator {
   Future<void> initialize() async {
     // Register real implementations
     _locationService = RealLocationService();
-    _weatherService = BackendWeatherService();
+    _weatherService = OptimizedWeatherService();
   }
 
   /// Reset all services (useful for testing)
