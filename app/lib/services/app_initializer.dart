@@ -7,6 +7,7 @@ import 'service_locator.dart';
 import 'pexels_api_service.dart';
 import '../providers/location_permission_provider.dart';
 import '../providers/user_provider.dart';
+import '../providers/temperature_settings_provider.dart';
 
 /// 앱 초기화를 관리하는 클래스
 /// 
@@ -33,8 +34,6 @@ class AppInitializer {
     if (_isInitialized) return;
 
     try {
-      print('[AppInitializer] Starting app initialization...');
-
       // 1. Firebase 초기화
       await _initializeFirebase();
 
@@ -49,19 +48,18 @@ class AppInitializer {
       // 4. UserProvider 초기화
       await _initializeUserProvider(ref);
 
+      // 5. TemperatureSettingsProvider 초기화
+      await _initializeTemperatureSettings(ref);
+
       _isInitialized = true;
-      print('[AppInitializer] App initialization completed successfully');
     } catch (e) {
       _initializationError = e.toString();
-      print('[AppInitializer] App initialization failed: $e');
       rethrow;
     }
   }
 
   /// Firebase 초기화
   static Future<void> _initializeFirebase() async {
-    print('[AppInitializer] Initializing Firebase...');
-    
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
@@ -70,53 +68,42 @@ class AppInitializer {
     if (kIsWeb) {
       await FirebaseAuth.instance.setPersistence(Persistence.SESSION);
     }
-
-    // 디버그용 인증 상태 리스너
-    FirebaseAuth.instance.authStateChanges().listen((user) {
-      debugPrint('[authStateChanges] user: ${user?.uid}');
-    });
-
-    print('[AppInitializer] Firebase initialized successfully');
   }
 
   /// 위치 권한 초기화
   static Future<void> _initializeLocationPermission(ProviderContainer ref) async {
-    print('[AppInitializer] Initializing location permission...');
-    
     try {
       final locationPermissionNotifier = ref.read(locationPermissionProvider.notifier);
       await locationPermissionNotifier.checkAndRequestPermission();
-      
-      final status = ref.read(locationPermissionProvider).status;
-      print('[AppInitializer] Location permission status: $status');
     } catch (e) {
-      print('[AppInitializer] Location permission initialization failed: $e');
       // 위치 권한 실패해도 앱은 계속 실행
     }
   }
 
   /// 기타 서비스 초기화
   static Future<void> _initializeServices() async {
-    print('[AppInitializer] Initializing services...');
-    
     // ServiceLocator 초기화
     await serviceLocator.initialize();
     
     // Pexels API 키 설정
     PexelsApiService.setApiKey('QwYk7NDUowPtA83vo1RHNYSHCWWnDTd8MNlm8giDiGq8blf1iPAHu1DP');
-    
-    print('[AppInitializer] Services initialized successfully');
   }
 
   /// UserProvider 초기화
   static Future<void> _initializeUserProvider(ProviderContainer ref) async {
-    print('[AppInitializer] Initializing UserProvider...');
-    
     try {
       await ref.read(userProvider.notifier).initialize();
-      print('[AppInitializer] UserProvider initialized successfully');
     } catch (e) {
-      print('[AppInitializer] UserProvider initialization failed: $e');
+      // UserProvider 초기화 실패는 무시
+    }
+  }
+
+  /// TemperatureSettingsProvider 초기화
+  static Future<void> _initializeTemperatureSettings(ProviderContainer ref) async {
+    try {
+      await ref.read(temperatureSettingsProvider.notifier).initialize();
+    } catch (e) {
+      // 온도 설정 초기화 실패해도 앱은 계속 실행 (기본값 사용)
     }
   }
 

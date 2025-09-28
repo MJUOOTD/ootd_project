@@ -1,0 +1,96 @@
+# ===================================================================
+# 일반 규칙 (운영체제 및 기타 도구)
+# ===================================================================
+
+# 각 운영체제(OS)에서 자동으로 생성하는 시스템 파일
+.DS_Store
+Thumbs.db
+
+# 기타 도구 및 임시 파일
+*.log
+*.pyc
+*.swp
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# ===================================================================
+# IDE 및 편집기 설정
+# ===================================================================
+
+# IntelliJ 계열
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Visual Studio Code
+# 팀원과 launch.json, tasks.json 등을 공유하고 싶다면 주석을 해제하세요.
+# .vscode/
+
+# ===================================================================
+# Flutter 및 Dart 관련
+# ===================================================================
+
+# Dart 도구 및 Pub 관련
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+
+# Flutter 플러그인 의존성 파일
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# 빌드 및 테스트 결과물
+/build/
+/coverage/
+
+# 심볼 및 난독화 맵 파일
+app.*.symbols
+app.*.map.json
+
+# ===================================================================
+# 각 플랫폼별 빌드 결과물
+# ===================================================================
+
+# Android
+/android/app/build/
+/android/build/
+/android/.gradle/
+/android/key.properties
+*.jks
+*.keystore
+
+# iOS
+/ios/build/
+/ios/Pods/
+/ios/Flutter/App.framework
+/ios/Flutter/Flutter.framework
+/ios/Flutter/.last_build_id
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# Web
+/web/build/
+
+# Desktop (macOS, Windows, Linux)
+/macos/build/
+/windows/build/
+/linux/build/
+
+# ===================================================================
+# 의존성 및 민감한 정보 (가장 중요)
+# ===================================================================
+
+# 의존성/라이브러리 폴더 (필요시 주석 해제)
+# /node_modules
+# /vendor
+# /venv
+
+# API 키, 비밀번호 등 민감한 정보가 담긴 파일
+.env
+.env.local
+.env.*.local
+secrets.json

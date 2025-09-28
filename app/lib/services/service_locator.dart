@@ -1,6 +1,8 @@
 import 'location/location_service.dart';
 import 'weather/weather_service.dart';
 import 'weather/backend_weather_service.dart';
+import 'temperature_settings_service.dart';
+import 'auth_service.dart';
 
 /// Service locator for dependency injection
 /// 
@@ -20,6 +22,8 @@ class ServiceLocator {
   // Service instances
   LocationService? _locationService;
   WeatherService? _weatherService;
+  TemperatureSettingsService? _temperatureSettingsService;
+  AuthService? _authService;
 
   /// Get location service instance
   LocationService get locationService {
@@ -33,22 +37,42 @@ class ServiceLocator {
     return _weatherService!;
   }
 
+  /// Get temperature settings service instance
+  TemperatureSettingsService get temperatureSettingsService {
+    _temperatureSettingsService ??= TemperatureSettingsService();
+    return _temperatureSettingsService!;
+  }
+
+  /// Get auth service instance
+  AuthService get authService {
+    _authService ??= AuthService();
+    return _authService!;
+  }
+
   /// Initialize all services
   /// This method should be called during app startup
   Future<void> initialize() async {
     // Register real implementations
     _locationService = RealLocationService();
     _weatherService = BackendWeatherService();
+    _temperatureSettingsService = TemperatureSettingsService();
+    _authService = AuthService();
   }
 
   /// Reset all services (useful for testing)
   void reset() {
     _locationService = null;
     _weatherService = null;
+    _temperatureSettingsService = null;
+    _authService = null;
   }
 
   /// Check if all required services are available
-  bool get isInitialized => _locationService != null && _weatherService != null;
+  bool get isInitialized => 
+      _locationService != null && 
+      _weatherService != null &&
+      _temperatureSettingsService != null &&
+      _authService != null;
 }
 
 /// Global service locator instance

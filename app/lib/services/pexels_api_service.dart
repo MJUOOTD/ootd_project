@@ -35,20 +35,14 @@ class PexelsApiService {
       );
 
       final response = await http.get(url, headers: _headers);
-
-      print('Pexels API 응답 상태: ${response.statusCode}');
-      print('Pexels API 응답 본문: ${response.body}');
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('파싱된 데이터: $data');
         return _parsePhotosFromResponse(data);
       } else {
-        print('Pexels API 오류 응답: ${response.body}');
         throw Exception('Pexels API 호출 실패: ${response.statusCode}');
       }
     } catch (e) {
-      print('Pexels API 오류: $e');
       return _getMockPhotos(situation);
     }
   }
@@ -71,7 +65,6 @@ class PexelsApiService {
       
       return _getMockPhotos('일반');
     } catch (e) {
-      print('인기 패션 이미지 가져오기 오류: $e');
       return _getMockPhotos('일반');
     }
   }

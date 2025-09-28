@@ -1,9 +1,47 @@
 import { cacheGet, cacheSet } from './cache.js';
+
+/**
+ * 기상청 표준 체감온도 계산 공식
+ * @param {number} temperature - 기온(°C)
+ * @param {number} humidity - 상대습도(%)
+ * @param {number} windSpeed - 풍속(km/h)
+ * @returns {number} 체감온도(°C)
+ */
+function calculateKMAFeelsLike(temperature, humidity, windSpeed) {
+  // 입력값 검증
+  if (typeof temperature !== 'number' || isNaN(temperature)) {
+    return temperature || 0;
+  }
+  
+  // 1. 풍속 냉각 지수 (Wind Chill Index)
+  // 적용 조건: 기온 < 10°C, 풍속 > 4.8 km/h
+  if (temperature < 10 && windSpeed > 4.8) {
+    const windChill = 13.12 + 0.6215 * temperature - 11.37 * Math.pow(windSpeed, 0.16) + 
+                      0.3965 * temperature * Math.pow(windSpeed, 0.16);
+    return Math.round(windChill * 10) / 10; // 소수점 1자리
+  }
+  
+  // 2. 열지수 (Heat Index)
+  // 적용 조건: 기온 > 26.7°C, 상대습도 > 40%
+  if (temperature > 26.7 && humidity > 40) {
+    const T = temperature;
+    const H = humidity;
+    const heatIndex = -8.784695 + 1.61139411*T + 2.338549*H - 0.14611605*T*H - 
+                      0.012308094*T*T - 0.016424828*H*H + 0.002211732*T*T*H + 
+                      0.00072546*T*H*H - 0.000003582*T*T*H*H;
+    return Math.round(heatIndex * 10) / 10; // 소수점 1자리
+  }
+  
+  // 3. 일반적인 경우: 기본 기온 반환
+  return temperature;
+}
+
 import fetch from 'node-fetch';
 import { toGrid } from './kmaGrid.js';
 
 // TODO: 기상청 API 연동. 현재는 스텁 데이터 + 캐시만 제공
 const DEFAULT_TTL_MS = 5 * 60 * 1000; // 5분
+
 
 export async function getCurrentWeather(lat, lon, opts = {}) {
   if (typeof lat !== 'number' || typeof lon !== 'number') {
@@ -19,7 +57,6 @@ export async function getCurrentWeather(lat, lon, opts = {}) {
   const force = opts.force === true;
   const cached = cacheGet(key);
   if (!force && cached) {
-    console.log(`[weather] cache hit key=${key}`);
     return { ...cached, cached: true };
   }
 
@@ -31,7 +68,6 @@ export async function getCurrentWeather(lat, lon, opts = {}) {
   const kmaKey = encodeURIComponent(kmaKeyRaw);
 
   try {
-    console.log(`[weather] fetch KMA nx=${nx} ny=${ny} lat=${lat} lon=${lon} force=${force}`);
     const normalized = await fetchKmaUltraNow(kmaKey, nx, ny, lat, lon);
     // Reverse geocoding으로 도시/국가 정보 보강 (best-effort)
     try {
@@ -51,10 +87,8 @@ export async function getCurrentWeather(lat, lon, opts = {}) {
     console.error('Failed to fetch data from KMA API:', e);
     // 폴백: 캐시가 있으면 캐시 반환, 없으면 정해진 기본값 반환
     if (cached) {
-      console.warn('[weather] returning cached due to KMA failure');
       return { ...cached, cached: true, source: cached.source ?? 'cache' };
     }
-    console.warn('[weather] returning fallback weather');
     return await buildFallback(lat, lon);
   }
 }
@@ -109,8 +143,9 @@ async function fetchKmaUltraNow(serviceKey, nx, ny, lat, lon) {
   const sky = map.get('SKY');
 
   const condition = skyToCondition(sky);
-  // KMA API는 체감온도를 제공하지 않으므로, 현재 기온으로 대체
-  const feelsLike = typeof temperature === 'number' ? temperature : undefined;
+  // 기상청 표준 체감온도 계산 공식 적용
+  const feelsLike = calculateKMAFeelsLike(temperature, humidity, windSpeed);
+  
   const timestamp = items[0]?.baseDate && items[0]?.baseTime
     ? kmaToIso(items[0].baseDate, items[0].baseTime)
     : new Date().toISOString();
@@ -218,7 +253,7 @@ async function buildFallback(lat, lon) {
       };
     }
   } catch (e) {
-    console.warn('[weather] reverse geocoding failed in fallback:', e.message);
+    // reverse geocoding 실패는 무시
   }
   
   return {

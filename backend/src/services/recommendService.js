@@ -1,7 +1,8 @@
 import { getUserProfile } from './userService.js';
 import { getCurrentWeather } from './weatherService.js';
 
-// 개인화 점수 = (기본 체감온도 × 개인 감도 계수) + (습도 보정) + (바람 보정) + (상황 가중치)
+// 개인화 점수 = (기상청 표준 체감온도 × 개인 감도 계수) + (습도 보정) + (바람 보정) + (상황 가중치)
+// feelsLike는 이제 기상청 표준 공식으로 계산된 정확한 체감온도
 function computePersonalizedFeel(feelsLike, humidity, windSpeed, sensitivityCoeff, situation) {
   const humidityAdj = humidity > 70 ? 2 : humidity < 30 ? -1 : 0;
   const windAdj = windSpeed > 3 ? -3 : 0;

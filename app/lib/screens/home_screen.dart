@@ -141,27 +141,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           final userState = ref.watch(userProvider);
           final locationPermissionState = ref.watch(locationPermissionProvider);
           
-          // 디버그: 현재 위치 권한 상태 출력
-          print('[HomeScreen] Current location permission state:');
-          print('  - isGranted: ${locationPermissionState.isGranted}');
-          print('  - isDenied: ${locationPermissionState.isDenied}');
-          print('  - isDeniedForever: ${locationPermissionState.isDeniedForever}');
-          print('  - isUnknown: ${locationPermissionState.isUnknown}');
-          print('  - status: ${locationPermissionState.status}');
-          print('  - _isNotificationDismissed: $_isNotificationDismissed');
-          print('  - Should show notification: ${!locationPermissionState.isGranted && !_isNotificationDismissed}');
-          print('  - Condition check: ${(locationPermissionState.isDenied || locationPermissionState.isDeniedForever || locationPermissionState.isUnknown) && !_isNotificationDismissed}');
           
           // 위치 권한 상태 변화 감지 (build 메서드에서만 ref.listen 사용 가능)
           ref.listen<LocationPermissionState>(locationPermissionProvider, (previous, next) {
-            print('[HomeScreen] Location permission state changed:');
-            print('  - isGranted: ${next.isGranted}');
-            print('  - isDenied: ${next.isDenied}');
-            print('  - isDeniedForever: ${next.isDeniedForever}');
-            print('  - isUnknown: ${next.isUnknown}');
-            print('  - status: ${next.status}');
-            print('  - _isNotificationDismissed: $_isNotificationDismissed');
-            
             if (next.isGranted && _isNotificationDismissed) {
               // 권한이 허용되면 알림 상태 리셋
               WidgetsBinding.instance.addPostFrameCallback((_) {

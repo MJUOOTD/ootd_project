@@ -60,13 +60,28 @@ class WeatherWidget extends ConsumerWidget {
                   ),
                 ],
               ),
-              Text(
-                '${w.temperature.round()}°C',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2C3E50),
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${w.temperature.round()}°C',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2C3E50),
+                    ),
+                  ),
+                  // 체감온도 표시 (기온과 다를 때만)
+                  if ((w.feelsLike - w.temperature).abs() > 0.5)
+                    Text(
+                      '체감 ${w.feelsLike.round()}°C',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                ],
               ),
             ],
           ),

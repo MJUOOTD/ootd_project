@@ -42,11 +42,6 @@ class WeatherService {
         throw Exception('Failed to load weather data: ${response.statusCode}');
       }
     } catch (e) {
-      print('Weather API error: $e');
-      print('Error type: ${e.runtimeType}');
-      if (e is http.ClientException) {
-        print('HTTP Client Exception: ${e.message}');
-      }
       // Return mock data for development with actual location
       return _getMockWeatherData(location);
     }
@@ -113,7 +108,6 @@ class WeatherService {
         throw Exception('Failed to load forecast data: ${response.statusCode}');
       }
     } catch (e) {
-      print('Forecast API error: $e');
       return [_getMockWeatherData(location)];
     }
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/user_provider.dart';
+import '../test_temperature_settings.dart';
 
 class MyPageScreen extends ConsumerStatefulWidget {
   const MyPageScreen({super.key});
@@ -195,11 +196,8 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
   }
 
   void _handleLogout() async {
-    print('[MyPageScreen] Logout button pressed');
     final userProviderNotifier = ref.read(userProvider.notifier);
-    print('[MyPageScreen] Current user before logout: ${userProviderNotifier.currentUser}');
     await userProviderNotifier.signOutAll();
-    print('[MyPageScreen] After signOutAll, current user: ${userProviderNotifier.currentUser}');
     
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -347,6 +345,13 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
                         title: '설정',
                         onTap: () => _showComingSoon(context, '설정'),
                       ),
+                      _buildDivider(),
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.science_outlined,
+                        title: '온도 설정 테스트',
+                        onTap: () => _navigateToTemperatureTest(context),
+                      ),
                 ],
               ),
             ),
@@ -472,6 +477,15 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
             child: const Text('확인'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _navigateToTemperatureTest(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const TemperatureSettingsTestScreen(),
       ),
     );
   }

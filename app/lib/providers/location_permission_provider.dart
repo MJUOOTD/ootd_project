@@ -53,8 +53,6 @@ class LocationPermissionProvider extends StateNotifier<LocationPermissionState> 
 
     try {
       // 캐시 무시하고 실제 권한 상태 확인
-      print('[LocationPermissionProvider] Checking actual permission status...');
-
       // 위치 서비스 활성화 확인
       final isServiceEnabled = await _locationService.isLocationServiceEnabled();
       if (!isServiceEnabled) {

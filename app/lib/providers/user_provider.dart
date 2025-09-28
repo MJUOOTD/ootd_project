@@ -84,7 +84,6 @@ class UserProvider extends StateNotifier<UserState> {
               updatedAt: firebaseUser.metadata.lastSignInTime ?? DateTime.now(),
             );
           } catch (e) {
-            print('Error parsing user data: $e');
             // Create a basic user model if parsing fails
             currentUser = UserModel(
               id: firebaseUser.uid,
@@ -146,32 +145,24 @@ class UserProvider extends StateNotifier<UserState> {
 
   // Unified sign-out: Firebase session + local state reset, with auth-state wait
   Future<void> signOutAll() async {
-    print('[signOutAll] Starting logout process...');
     state = state.copyWith(isLoading: true, error: null);
     Object? signOutError;
     try {
       // Use SimpleAuthService for logout
       final authService = SimpleAuthService.instance;
-      print('[signOutAll] Calling Firebase signOut...');
       await authService.signOut();
-      print('[signOutAll] Firebase signOut completed');
       
       // Wait for auth state to change
       try {
-        print('[signOutAll] Waiting for auth state change...');
         await authService.authState
             .firstWhere((u) => u == null)
             .timeout(const Duration(seconds: 3), onTimeout: () => null);
-        print('[signOutAll] Auth state changed to null');
       } catch (_) {
-        print('[signOutAll] Auth state wait timeout or error');
         // Ignore wait errors; we'll still finalize local state
       }
     } catch (e) {
-      print('[signOutAll] Error during logout: $e');
       signOutError = e;
     } finally {
-      print('[signOutAll] Finalizing local state...');
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('userData');
       await prefs.setBool('isFirstTime', true);
@@ -181,7 +172,6 @@ class UserProvider extends StateNotifier<UserState> {
         isLoading: false,
         error: signOutError == null ? null : 'Failed to sign out: ${signOutError.toString()}',
       );
-      print('[signOutAll] Local state cleared. Current user: ${state.currentUser}');
     }
   }
 
@@ -285,14 +275,12 @@ class UserProvider extends StateNotifier<UserState> {
 
   // Clear user state without Firebase signout (for auth state listener)
   void clearUser() {
-    print('[clearUser] Clearing user state...');
     state = UserState(
       currentUser: null,
       isLoading: false,
       error: null,
       isFirstTime: state.isFirstTime,
     );
-    print('[clearUser] User state cleared. Current user: ${state.currentUser}');
   }
 
   // Create a new user for onboarding
@@ -337,13 +325,10 @@ final authStateProvider = StreamProvider<fb.User?>((ref) {
 // Firebase 인증 상태 변화를 감지하여 UserProvider 업데이트
 final authStateListenerProvider = StreamProvider<void>((ref) {
   return SimpleAuthService.instance.authState.map((user) {
-    print('[authStateListenerProvider] Firebase user changed: ${user?.uid}');
     // 로그인 시에만 UserProvider 초기화 (로그아웃 시에는 initialize 호출하지 않음)
     if (user != null) {
-      print('[authStateListenerProvider] User logged in, initializing...');
       ref.read(userProvider.notifier).initialize();
     } else {
-      print('[authStateListenerProvider] User logged out, clearing user state...');
       // 로그아웃 시에는 사용자 상태만 초기화
       ref.read(userProvider.notifier).clearUser();
     }

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import '../models/weather_model.dart';
 import '../services/service_locator.dart';
 import 'location_permission_provider.dart';
@@ -66,6 +65,8 @@ class WeatherProvider extends StateNotifier<WeatherState> {
     try {
       // 현재 위치로 날씨 정보 가져오기
       final weather = await serviceLocator.weatherService.getCurrentWeather(force: force);
+      
+      
       state = state.copyWith(
         currentWeather: weather,
         isLoading: false,
