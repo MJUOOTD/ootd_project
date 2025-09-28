@@ -1,23 +1,31 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Color definitions based on design system
-  static const Color primaryColor = Color(0xFF121212); // 기본 검정색으로 변경
+  // Color definitions based on 색상명세서.md
+  // 메인 색상 (Primary): #4FC3F7 - 밝고 경쾌한 하늘색
+  static const Color primaryColor = Color(0xFF4FC3F7);
   static const Color backgroundColor = Color(0xFFFFFFFF);
   static const Color mutedColor = Color(0xFFECECF0);
-  static const Color accentColor = Color(0xFFE9EBEF); // 기본 회색으로 복원
+  static const Color accentColor = Color(0xFFE9EBEF);
   static const Color destructiveColor = Color(0xFFD4183D);
   
-  // Secondary color mapped from oklch(0.95 0.0058 264.53) to neutral light tone
-  // This is approximately a very light gray with slight blue tint
-  static const Color secondaryColor = Color(0xFFF2F2F5);
+  // 서브 색상 (Sub) - 투명도 변형들
+  static const Color sub100 = Color(0xFF4FC3F7); // rgba(79, 195, 247, 1.0) - CTA 버튼, 메인 강조
+  static const Color sub80 = Color(0xCC4FC3F7);  // rgba(79, 195, 247, 0.8) - 카드 배경, Hover 효과
+  static const Color sub60 = Color(0x994FC3F7);  // rgba(79, 195, 247, 0.6) - 보조 아이콘, 서브 텍스트 강조
+  static const Color sub40 = Color(0x664FC3F7);  // rgba(79, 195, 247, 0.4) - 구분선, 그래프 영역
+  static const Color sub20 = Color(0x334FC3F7);  // rgba(79, 195, 247, 0.2) - 하이라이트 배경, 섀도우 블러
+  static const Color sub10 = Color(0x1A4FC3F7);  // rgba(79, 195, 247, 0.1) - 선택 영역, 약한 강조 오버레이
   
-  // Dark theme colors
+  // Secondary color - 서브 색상의 연한 버전
+  static const Color secondaryColor = Color(0x1A4FC3F7); // sub10과 동일
+  
+  // Dark theme colors - 다크 모드에서도 메인 색상 유지하되 배경은 어둡게
   static const Color darkBackgroundColor = Color(0xFF121212);
   static const Color darkSurfaceColor = Color(0xFF1E1E1E);
   static const Color darkMutedColor = Color(0xFF2A2A2A);
   static const Color darkAccentColor = Color(0xFF3A3A3A);
-  static const Color darkSecondaryColor = Color(0xFF2A2A2A);
+  static const Color darkSecondaryColor = Color(0x1A4FC3F7); // 다크 모드에서도 서브 색상 사용
 
   // Border radius constant
   static const double borderRadius = 10.0;
@@ -28,15 +36,15 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       colorScheme: const ColorScheme.light(
-        primary: primaryColor,
+        primary: sub100,
         secondary: secondaryColor,
         surface: backgroundColor,
         background: backgroundColor,
         error: destructiveColor,
         onPrimary: Colors.white,
-        onSecondary: primaryColor,
-        onSurface: primaryColor,
-        onBackground: primaryColor,
+        onSecondary: sub100,
+        onSurface: sub100,
+        onBackground: sub100,
         onError: Colors.white,
         outline: mutedColor,
         outlineVariant: accentColor,
@@ -44,11 +52,11 @@ class AppTheme {
       textTheme: _buildTextTheme(Brightness.light),
       appBarTheme: const AppBarTheme(
         backgroundColor: backgroundColor,
-        foregroundColor: primaryColor,
+        foregroundColor: sub100,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
-          color: primaryColor,
+          color: sub100,
           fontSize: 18,
           fontWeight: FontWeight.w500,
           height: 1.5,
@@ -58,14 +66,16 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: backgroundColor,
         elevation: 2,
+        shadowColor: sub20, // 서브 색상의 섀도우 사용
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
+          backgroundColor: sub100, // 메인 강조 색상 사용
           foregroundColor: Colors.white,
+          shadowColor: sub20, // 서브 색상의 섀도우
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),
@@ -78,8 +88,8 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: primaryColor,
-          side: const BorderSide(color: primaryColor),
+          foregroundColor: sub100,
+          side: const BorderSide(color: sub100),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),
@@ -92,7 +102,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: primaryColor,
+          foregroundColor: sub100,
           textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -102,7 +112,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: accentColor,
+        fillColor: sub10, // 서브 색상의 연한 버전 사용
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius),
           borderSide: BorderSide.none,
@@ -113,7 +123,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius),
-          borderSide: const BorderSide(color: primaryColor, width: 2),
+          borderSide: const BorderSide(color: sub100, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius),
@@ -123,16 +133,16 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: backgroundColor,
-        selectedItemColor: primaryColor,
+        selectedItemColor: sub100,
         unselectedItemColor: mutedColor,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
       chipTheme: ChipThemeData(
         backgroundColor: accentColor,
-        selectedColor: primaryColor,
+        selectedColor: sub100,
         labelStyle: const TextStyle(
-          color: primaryColor,
+          color: sub100,
           fontSize: 14,
           fontWeight: FontWeight.w400,
           height: 1.5,
@@ -155,7 +165,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: const ColorScheme.dark(
-        primary: primaryColor,
+        primary: sub100,
         secondary: darkSecondaryColor,
         surface: darkSurfaceColor,
         background: darkBackgroundColor,
@@ -185,14 +195,16 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: darkSurfaceColor,
         elevation: 2,
+        shadowColor: sub20, // 다크 모드에서도 서브 색상의 섀도우 사용
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
+          backgroundColor: sub100, // 다크 모드에서도 메인 색상 사용
           foregroundColor: Colors.white,
+          shadowColor: sub20,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),
@@ -240,7 +252,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius),
-          borderSide: const BorderSide(color: primaryColor, width: 2),
+          borderSide: const BorderSide(color: sub100, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius),
@@ -250,14 +262,14 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: darkSurfaceColor,
-        selectedItemColor: primaryColor,
+        selectedItemColor: sub100,
         unselectedItemColor: darkMutedColor,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
       chipTheme: ChipThemeData(
         backgroundColor: darkAccentColor,
-        selectedColor: primaryColor,
+        selectedColor: sub100,
         labelStyle: const TextStyle(
           color: Colors.white,
           fontSize: 14,
@@ -279,7 +291,7 @@ class AppTheme {
   // Text theme builder
   static TextTheme _buildTextTheme(Brightness brightness) {
     final Color textColor = brightness == Brightness.light 
-        ? primaryColor 
+        ? sub100 
         : Colors.white;
     
     return TextTheme(
@@ -366,7 +378,7 @@ class AppTheme {
   static BorderRadius get borderRadiusAll => BorderRadius.circular(borderRadius);
   
   // Helper method to get primary color
-  static Color get primary => primaryColor;
+  static Color get primary => sub100;
   
   // Helper method to get background color
   static Color get background => backgroundColor;
@@ -382,4 +394,12 @@ class AppTheme {
   
   // Helper method to get secondary color
   static Color get secondary => secondaryColor;
+  
+  // Helper methods for sub colors
+  static Color get sub100Color => sub100;
+  static Color get sub80Color => sub80;
+  static Color get sub60Color => sub60;
+  static Color get sub40Color => sub40;
+  static Color get sub20Color => sub20;
+  static Color get sub10Color => sub10;
 }
