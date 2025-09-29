@@ -20,6 +20,7 @@ class WeatherWidget extends ConsumerStatefulWidget {
 
 class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
   bool _hasShownDialog = false;
+  bool _isRefreshing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -31,9 +32,14 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
     if (isLoading) return _buildSkeleton();
     if (w == null) return _buildEmpty();
     
-    // 위치 권한이 없는 경우 안내 메시지 표시
+    // 위치 관련 오류인 경우 안내 메시지 표시
     final hasLocationPermissionError = error != null && 
-        (error.contains('현재 위치를 불러올 수 없음') || error.contains('위치 권한') || error.contains('permission') || error.contains('Permission') || error.contains('LocationException'));
+        (error.contains('현재 위치를 불러올 수 없음') || 
+         error.contains('위치 서비스가 비활성화되어 있습니다') ||
+         error.contains('위치 권한') || 
+         error.contains('permission') || 
+         error.contains('Permission') || 
+         error.contains('LocationException'));
     
     // 에러가 있지만 날씨 데이터가 있는 경우 (fallback 상황)
     final hasError = error != null && error.isNotEmpty && !hasLocationPermissionError;
@@ -97,23 +103,6 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  if (widget.onRefresh != null)
-                    GestureDetector(
-                      onTap: widget.onRefresh,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[50],
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Icon(
-                          Icons.refresh,
-                          color: Colors.blue[600],
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  const SizedBox(width: 4),
                   GestureDetector(
                     onTap: () => _showCitySearch(context, ref),
                     child: Container(
@@ -137,41 +126,7 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
           const SizedBox(height: 8),
           
         // 현재 위치 표시
-        Builder(
-          builder: (context) {
-            print('[WeatherWidget] Location debug:');
-            print('[WeatherWidget] - city: "${w.location.city}"');
-            print('[WeatherWidget] - country: "${w.location.country}"');
-            print('[WeatherWidget] - district: "${w.location.district}"');
-            print('[WeatherWidget] - subLocality: "${w.location.subLocality}"');
-            print('[WeatherWidget] - formattedLocation: "${w.location.formattedLocation}"');
-            
-            return Row(
-              children: [
-                Icon(
-                  Icons.location_on,
-                  color: Colors.grey[500],
-                  size: 14,
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    hasLocationPermissionError 
-                        ? '현재 위치를 불러올 수 없음'
-                        : (w.location.formattedLocation.isNotEmpty 
-                            ? w.location.formattedLocation 
-                            : '위치 정보 없음'),
-                    style: TextStyle(
-                      color: Colors.grey[500],
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
+        _buildLocationRow(w, hasLocationPermissionError),
           
           
           // 에러 메시지 표시 (fallback 상황)
@@ -221,7 +176,7 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  _getWeatherIcon(w.condition),
+                  _getWeatherIcon(w.condition, DateTime.now().hour),
                   size: 32,
                   color: Colors.blue[600],
                 ),
@@ -469,24 +424,68 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
     );
   }
 
-  IconData _getWeatherIcon(String condition) {
+  IconData _getWeatherIcon(String condition, int hour) {
+    // 계절별 일출/일몰 시간 (한국 기준, 월별 근사값)
+    final now = DateTime.now();
+    final month = now.month;
+    final sunriseSunsetTimes = _getSunriseSunsetTimes(month);
+    final sunrise = sunriseSunsetTimes['sunrise']!;
+    final sunset = sunriseSunsetTimes['sunset']!;
+    
+    // 현재 시간이 낮인지 밤인지 판단
+    final isDaytime = hour >= sunrise && hour < sunset;
+    
+    print('[WeatherWidget] Weather icon: month=$month, hour=$hour, sunrise=$sunrise, sunset=$sunset, isDaytime=$isDaytime, condition=$condition');
+    
     switch (condition.toLowerCase()) {
       case 'sunny':
       case 'clear':
-        return Icons.wb_sunny;
+        return isDaytime ? Icons.wb_sunny : Icons.nightlight_round; // 낮: 해, 밤: 달
       case 'cloudy':
       case 'partly cloudy':
-        return Icons.wb_cloudy;
+        return isDaytime ? Icons.wb_cloudy : Icons.cloud; // 낮: 구름, 밤: 구름
       case 'rainy':
       case 'rain':
-        return Icons.grain;
+        return Icons.grain; // 비는 낮/밤 구분 없음
       case 'snowy':
       case 'snow':
-        return Icons.ac_unit;
+        return Icons.ac_unit; // 눈은 낮/밤 구분 없음
       case 'windy':
-        return Icons.air;
+        return Icons.air; // 바람은 낮/밤 구분 없음
       default:
-        return Icons.wb_sunny;
+        return isDaytime ? Icons.wb_sunny : Icons.nightlight_round; // 기본값
+    }
+  }
+
+  // 월별 일출/일몰 시간 반환 (한국 기준)
+  Map<String, int> _getSunriseSunsetTimes(int month) {
+    switch (month) {
+      case 1:  // 1월
+        return {'sunrise': 7, 'sunset': 17};
+      case 2:  // 2월
+        return {'sunrise': 7, 'sunset': 18};
+      case 3:  // 3월
+        return {'sunrise': 6, 'sunset': 18};
+      case 4:  // 4월
+        return {'sunrise': 6, 'sunset': 19};
+      case 5:  // 5월
+        return {'sunrise': 5, 'sunset': 19};
+      case 6:  // 6월
+        return {'sunrise': 5, 'sunset': 20};
+      case 7:  // 7월
+        return {'sunrise': 5, 'sunset': 20};
+      case 8:  // 8월
+        return {'sunrise': 6, 'sunset': 19};
+      case 9:  // 9월
+        return {'sunrise': 6, 'sunset': 18};
+      case 10: // 10월
+        return {'sunrise': 6, 'sunset': 18};
+      case 11: // 11월
+        return {'sunrise': 7, 'sunset': 17};
+      case 12: // 12월
+        return {'sunrise': 7, 'sunset': 17};
+      default:
+        return {'sunrise': 6, 'sunset': 18}; // 기본값
     }
   }
 
@@ -543,6 +542,92 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
     }
   }
 
+  Widget _buildLocationRow(WeatherModel weather, bool hasLocationPermissionError) {
+    print('[WeatherWidget] Location debug:');
+    print('[WeatherWidget] - city: "${weather.location.city}"');
+    print('[WeatherWidget] - country: "${weather.location.country}"');
+    print('[WeatherWidget] - district: "${weather.location.district}"');
+    print('[WeatherWidget] - subLocality: "${weather.location.subLocality}"');
+    print('[WeatherWidget] - formattedLocation: "${weather.location.formattedLocation}"');
+    
+    return Row(
+      children: [
+        Icon(
+          Icons.location_on,
+          color: Colors.grey[500],
+          size: 14,
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            hasLocationPermissionError 
+                ? '현재 위치를 불러올 수 없음'
+                : (weather.location.formattedLocation.isNotEmpty && 
+                   weather.location.formattedLocation != '현재 위치' &&
+                   weather.location.formattedLocation != 'globe'
+                    ? weather.location.formattedLocation 
+                    : '위치 정보 없음'),
+            style: TextStyle(
+              color: Colors.grey[500],
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ),
+        // 위치 새로고침 버튼 (중복 방지를 위해 조건부 렌더링)
+        if (!hasLocationPermissionError)
+          _buildRefreshButton(),
+      ],
+    );
+  }
+
+  Widget _buildRefreshButton() {
+    return Container(
+      key: const ValueKey('location_refresh_button'),
+      child: GestureDetector(
+        onTap: _isRefreshing ? null : () async {
+          if (_isRefreshing) return;
+          
+          setState(() {
+            _isRefreshing = true;
+          });
+          
+          try {
+            print('[WeatherWidget] Location refresh button tapped');
+            await ref.read(weatherProvider.notifier).refreshCurrentLocation();
+          } finally {
+            if (mounted) {
+              setState(() {
+                _isRefreshing = false;
+              });
+            }
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: _isRefreshing ? Colors.grey[100] : Colors.blue[50],
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: _isRefreshing 
+            ? SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[600]!),
+                ),
+              )
+            : Icon(
+                Icons.refresh,
+                color: Colors.blue[600],
+                size: 16,
+              ),
+        ),
+      ),
+    );
+  }
+
   void _showCitySearch(BuildContext context, WidgetRef ref) async {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -565,7 +650,7 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
                 size: 24,
               ),
               const SizedBox(width: 8),
-              const Text('위치 권한 필요'),
+              const Text('위치 정보 필요'),
             ],
           ),
           content: const Column(
@@ -573,12 +658,12 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '현재 위치 정보를 동의하지 않아 정확한 날씨 정보 제공이 어렵습니다.',
+                '현재 위치 정보를 가져올 수 없어 정확한 날씨 정보 제공이 어렵습니다.',
                 style: TextStyle(fontSize: 16),
               ),
               SizedBox(height: 12),
               Text(
-                '더보기 버튼을 눌러 검색을 통해 원하는 위치의 날씨를 확인하세요.',
+                '위치 검색 버튼을 눌러 원하는 위치의 날씨를 확인하거나, 설정에서 위치 권한을 확인해주세요.',
                 style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
             ],

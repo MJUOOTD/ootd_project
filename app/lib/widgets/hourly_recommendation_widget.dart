@@ -122,11 +122,11 @@ class _HourlyRecommendationWidgetState extends ConsumerState<HourlyRecommendatio
                       final displayHour = weatherTime.hour;
                       final displayMinute = weatherTime.minute;
                       final timeSlot = _getTimeSlot(displayHour, displayMinute);
-                      final weatherEmoji = _getWeatherEmojiFromCondition(weather.condition);
+                      final weatherEmoji = _getWeatherEmojiFromCondition(weather.condition, displayHour);
                       final recommendation = _getRecommendationFromTemperature(weather.temperature);
                       final temperature = weather.temperature.round();
                       
-                      print('[HourlyWidget] Item $index: ${weatherTime} - ${timeSlot} - ${weather.isCurrent ? 'CURRENT' : 'FUTURE'}');
+                      print('[HourlyWidget] Item $index: $weatherTime - $timeSlot - ${weather.isCurrent ? 'CURRENT' : 'FUTURE'}');
                       
                       return _buildHourlyCard(
                         context, 
@@ -252,16 +252,74 @@ class _HourlyRecommendationWidgetState extends ConsumerState<HourlyRecommendatio
   }
 
 
-  String _getWeatherEmojiFromCondition(String condition) {
-    const iconMap = {
-      'Clear': '☀️',
-      'Clouds': '☁️',
-      'Rain': '🌧️',
-      'Snow': '❄️',
-      'Thunderstorm': '⛈️',
-      'Fog': '🌫️',
+  String _getWeatherEmojiFromCondition(String condition, int hour) {
+    // 계절별 일출/일몰 시간 (한국 기준, 월별 근사값)
+    final now = DateTime.now();
+    final month = now.month;
+    
+    // 월별 일출/일몰 시간 (한국 기준)
+    final sunriseSunsetTimes = _getSunriseSunsetTimes(month);
+    final sunrise = sunriseSunsetTimes['sunrise']!;
+    final sunset = sunriseSunsetTimes['sunset']!;
+    
+    // 현재 시간이 낮인지 밤인지 판단
+    final isDaytime = hour >= sunrise && hour < sunset;
+    
+    print('[HourlyWidget] Weather icon: month=$month, hour=$hour, sunrise=$sunrise, sunset=$sunset, isDaytime=$isDaytime, condition=$condition');
+    
+    // 시간대별 아이콘 맵
+    final dayIconMap = {
+      'Clear': '☀️',        // 낮 맑음: 해
+      'Clouds': '⛅',       // 낮 구름
+      'Rain': '🌦️',        // 낮 비
+      'Snow': '🌨️',        // 낮 눈
+      'Thunderstorm': '⛈️', // 낮 뇌우
+      'Fog': '🌫️',         // 낮 안개
     };
-    return iconMap[condition] ?? '🌤️';
+    
+    final nightIconMap = {
+      'Clear': '🌙',        // 밤 맑음: 달
+      'Clouds': '☁️',       // 밤 구름
+      'Rain': '🌧️',        // 밤 비
+      'Snow': '❄️',        // 밤 눈
+      'Thunderstorm': '⛈️', // 밤 뇌우
+      'Fog': '🌫️',         // 밤 안개
+    };
+    
+    final iconMap = isDaytime ? dayIconMap : nightIconMap;
+    return iconMap[condition] ?? (isDaytime ? '🌤️' : '🌙');
+  }
+
+  // 월별 일출/일몰 시간 반환 (한국 기준)
+  Map<String, int> _getSunriseSunsetTimes(int month) {
+    switch (month) {
+      case 1:  // 1월
+        return {'sunrise': 7, 'sunset': 17};
+      case 2:  // 2월
+        return {'sunrise': 7, 'sunset': 18};
+      case 3:  // 3월
+        return {'sunrise': 6, 'sunset': 18};
+      case 4:  // 4월
+        return {'sunrise': 6, 'sunset': 19};
+      case 5:  // 5월
+        return {'sunrise': 5, 'sunset': 19};
+      case 6:  // 6월
+        return {'sunrise': 5, 'sunset': 20};
+      case 7:  // 7월
+        return {'sunrise': 5, 'sunset': 20};
+      case 8:  // 8월
+        return {'sunrise': 6, 'sunset': 19};
+      case 9:  // 9월
+        return {'sunrise': 6, 'sunset': 18};
+      case 10: // 10월
+        return {'sunrise': 6, 'sunset': 18};
+      case 11: // 11월
+        return {'sunrise': 7, 'sunset': 17};
+      case 12: // 12월
+        return {'sunrise': 7, 'sunset': 17};
+      default:
+        return {'sunrise': 6, 'sunset': 18}; // 기본값
+    }
   }
 
   String _getRecommendationFromTemperature(double temperature) {
@@ -326,7 +384,7 @@ class _HourlyRecommendationWidgetState extends ConsumerState<HourlyRecommendatio
                 size: 24,
               ),
               const SizedBox(width: 8),
-              const Text('위치 권한 필요'),
+              const Text('위치 정보 필요'),
             ],
           ),
           content: const Column(
@@ -334,12 +392,12 @@ class _HourlyRecommendationWidgetState extends ConsumerState<HourlyRecommendatio
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '현재 위치 정보를 동의하지 않아 정확한 날씨 정보 제공이 어렵습니다.',
+                '현재 위치 정보를 가져올 수 없어 정확한 날씨 정보 제공이 어렵습니다.',
                 style: TextStyle(fontSize: 16),
               ),
               SizedBox(height: 12),
               Text(
-                '더보기 버튼을 눌러 검색을 통해 원하는 위치의 날씨를 확인하세요.',
+                '위치 검색 버튼을 눌러 원하는 위치의 날씨를 확인하거나, 설정에서 위치 권한을 확인해주세요.',
                 style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
             ],

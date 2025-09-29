@@ -95,19 +95,8 @@ class FavoritesService {
         _favorites = favoritesJson.map((json) => PlaceInfo.fromJson(json)).toList();
         print('[FavoritesService] Loaded ${_favorites.length} favorites');
       } else {
-        // 기본 즐겨찾기 도시 추가
-        _favorites = [
-          PlaceInfo(
-            id: 'seoul',
-            placeName: '서울특별시',
-            addressName: '서울특별시',
-            roadAddressName: '서울특별시',
-            categoryName: '지역',
-            latitude: 37.5665,
-            longitude: 126.9780,
-          ),
-        ];
-        await _saveFavorites();
+        // 기본 즐겨찾기 목록은 비어있음 (사용자가 직접 추가)
+        _favorites = [];
       }
     } catch (e) {
       print('[FavoritesService] Error loading favorites: $e');

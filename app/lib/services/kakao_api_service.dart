@@ -88,14 +88,14 @@ class PlaceInfo {
   factory PlaceInfo.fromJson(Map<String, dynamic> json) {
     return PlaceInfo(
       id: json['id'] ?? '',
-      placeName: json['place_name'] ?? '',
-      addressName: json['address_name'] ?? '',
-      roadAddressName: json['road_address_name'] ?? '',
-      categoryName: json['category_name'] ?? '',
-      latitude: double.tryParse(json['y'] ?? '0') ?? 0.0,
-      longitude: double.tryParse(json['x'] ?? '0') ?? 0.0,
+      placeName: json['placeName'] ?? json['place_name'] ?? '',
+      addressName: json['addressName'] ?? json['address_name'] ?? '',
+      roadAddressName: json['roadAddressName'] ?? json['road_address_name'] ?? '',
+      categoryName: json['categoryName'] ?? json['category_name'] ?? '',
+      latitude: (json['latitude'] ?? double.tryParse(json['y'] ?? '0') ?? 0.0).toDouble(),
+      longitude: (json['longitude'] ?? double.tryParse(json['x'] ?? '0') ?? 0.0).toDouble(),
       phone: json['phone'],
-      placeUrl: json['place_url'],
+      placeUrl: json['placeUrl'] ?? json['place_url'],
     );
   }
 
@@ -113,6 +113,12 @@ class PlaceInfo {
 
   /// 도시명만 추출 (시/도 단위)
   String get cityName {
+    // placeName이 이미 처리된 도시명일 가능성이 높음
+    if (placeName.isNotEmpty && placeName != 'Unknown') {
+      return placeName;
+    }
+    
+    // addressName에서 추출 시도
     final parts = addressName.split(' ');
     if (parts.length >= 2) {
       return parts[1]; // 시/도
@@ -122,6 +128,7 @@ class PlaceInfo {
 
   /// 구/군명 추출
   String get districtName {
+    // addressName에서 구/군 추출
     final parts = addressName.split(' ');
     if (parts.length >= 3) {
       return parts[2]; // 구/군

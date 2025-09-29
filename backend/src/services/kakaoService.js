@@ -145,17 +145,24 @@ export async function getAddressFromCoordinates(lat, lon) {
       let placeName = '';
       let addressName = '';
       
+      console.log(`[KakaoService] Kakao API response for ${lat}, ${lon}:`);
+      console.log(`[KakaoService] - roadAddress:`, roadAddress);
+      console.log(`[KakaoService] - address:`, address);
+      
       if (roadAddress.address_name) {
         // 도로명 주소가 있는 경우
         placeName = roadAddress.region_2depth_name || roadAddress.region_1depth_name || 'Unknown';
         addressName = roadAddress.address_name;
+        console.log(`[KakaoService] Using road address: ${placeName} - ${addressName}`);
       } else if (address.address_name) {
         // 지번 주소가 있는 경우
         placeName = address.region_2depth_name || address.region_1depth_name || 'Unknown';
         addressName = address.address_name;
+        console.log(`[KakaoService] Using address: ${placeName} - ${addressName}`);
       } else {
         placeName = 'Unknown Location';
         addressName = 'Unknown Address';
+        console.log(`[KakaoService] No valid address found, using fallback`);
       }
       
       return {
@@ -429,13 +436,201 @@ function getFallbackCities(query) {
 
 // API 키가 없을 때 사용할 기본 주소
 function getFallbackAddress(lat, lon) {
-  // 간단한 지역 판별 로직
-  if (lat >= 37.0 && lat <= 38.0 && lon >= 126.0 && lon <= 127.0) {
+  // 한국 주요 지역 판별 로직
+  console.log(`[KakaoService] Fallback address for coordinates: ${lat}, ${lon}`);
+  console.log(`[KakaoService] Checking region for lat: ${lat}, lon: ${lon}`);
+  
+  // 서울특별시
+  if (lat >= 37.4 && lat <= 37.7 && lon >= 126.7 && lon <= 127.2) {
     return {
       id: 'seoul',
       placeName: '서울특별시',
       addressName: '서울특별시',
       roadAddressName: '서울특별시',
+      categoryName: '지역',
+      latitude: lat,
+      longitude: lon,
+    };
+  }
+  
+  // 수원시 (실제 중심 좌표 기반: 37.2636, 126.9986)
+  if (lat >= 37.20 && lat <= 37.32 && lon >= 126.95 && lon <= 127.05) {
+    console.log(`[KakaoService] Matched Suwon: lat=${lat}, lon=${lon}`);
+    return {
+      id: 'suwon',
+      placeName: '수원시',
+      addressName: '경기도 수원시',
+      roadAddressName: '경기도 수원시',
+      categoryName: '지역',
+      latitude: lat,
+      longitude: lon,
+    };
+  }
+  
+  // 경기도 (수원시 제외)
+  if (lat >= 37.0 && lat <= 38.3 && lon >= 126.0 && lon <= 127.5) {
+    return {
+      id: 'gyeonggi',
+      placeName: '경기도',
+      addressName: '경기도',
+      roadAddressName: '경기도',
+      categoryName: '지역',
+      latitude: lat,
+      longitude: lon,
+    };
+  }
+  
+  // 부산광역시
+  if (lat >= 35.0 && lat <= 35.4 && lon >= 128.8 && lon <= 129.3) {
+    return {
+      id: 'busan',
+      placeName: '부산광역시',
+      addressName: '부산광역시',
+      roadAddressName: '부산광역시',
+      categoryName: '지역',
+      latitude: lat,
+      longitude: lon,
+    };
+  }
+  
+  // 대구광역시
+  if (lat >= 35.7 && lat <= 36.0 && lon >= 128.4 && lon <= 128.8) {
+    return {
+      id: 'daegu',
+      placeName: '대구광역시',
+      addressName: '대구광역시',
+      roadAddressName: '대구광역시',
+      categoryName: '지역',
+      latitude: lat,
+      longitude: lon,
+    };
+  }
+  
+  // 인천광역시
+  if (lat >= 37.2 && lat <= 37.7 && lon >= 126.4 && lon <= 126.8) {
+    return {
+      id: 'incheon',
+      placeName: '인천광역시',
+      addressName: '인천광역시',
+      roadAddressName: '인천광역시',
+      categoryName: '지역',
+      latitude: lat,
+      longitude: lon,
+    };
+  }
+  
+  // 광주광역시
+  if (lat >= 35.0 && lat <= 35.3 && lon >= 126.7 && lon <= 127.0) {
+    return {
+      id: 'gwangju',
+      placeName: '광주광역시',
+      addressName: '광주광역시',
+      roadAddressName: '광주광역시',
+      categoryName: '지역',
+      latitude: lat,
+      longitude: lon,
+    };
+  }
+  
+  // 대전광역시
+  if (lat >= 36.2 && lat <= 36.5 && lon >= 127.2 && lon <= 127.6) {
+    return {
+      id: 'daejeon',
+      placeName: '대전광역시',
+      addressName: '대전광역시',
+      roadAddressName: '대전광역시',
+      categoryName: '지역',
+      latitude: lat,
+      longitude: lon,
+    };
+  }
+  
+  // 울산광역시
+  if (lat >= 35.4 && lat <= 35.7 && lon >= 129.1 && lon <= 129.4) {
+    return {
+      id: 'ulsan',
+      placeName: '울산광역시',
+      addressName: '울산광역시',
+      roadAddressName: '울산광역시',
+      categoryName: '지역',
+      latitude: lat,
+      longitude: lon,
+    };
+  }
+  
+  // 세종특별자치시
+  if (lat >= 36.4 && lat <= 36.7 && lon >= 127.1 && lon <= 127.4) {
+    return {
+      id: 'sejong',
+      placeName: '세종특별자치시',
+      addressName: '세종특별자치시',
+      roadAddressName: '세종특별자치시',
+      categoryName: '지역',
+      latitude: lat,
+      longitude: lon,
+    };
+  }
+  
+  // 성남시
+  if (lat >= 37.4 && lat <= 37.5 && lon >= 127.1 && lon <= 127.2) {
+    return {
+      id: 'seongnam',
+      placeName: '성남시',
+      addressName: '경기도 성남시',
+      roadAddressName: '경기도 성남시',
+      categoryName: '지역',
+      latitude: lat,
+      longitude: lon,
+    };
+  }
+  
+  // 고양시
+  if (lat >= 37.6 && lat <= 37.7 && lon >= 126.7 && lon <= 126.9) {
+    return {
+      id: 'goyang',
+      placeName: '고양시',
+      addressName: '경기도 고양시',
+      roadAddressName: '경기도 고양시',
+      categoryName: '지역',
+      latitude: lat,
+      longitude: lon,
+    };
+  }
+  
+  // 용인시 (실제 중심 좌표 기반: 37.2411, 127.1776)
+  if (lat >= 37.10 && lat <= 37.40 && lon >= 127.05 && lon <= 127.30) {
+    console.log(`[KakaoService] Matched Yongin: lat=${lat}, lon=${lon}`);
+    return {
+      id: 'yongin',
+      placeName: '용인시',
+      addressName: '경기도 용인시',
+      roadAddressName: '경기도 용인시',
+      categoryName: '지역',
+      latitude: lat,
+      longitude: lon,
+    };
+  }
+  
+  // 안양시
+  if (lat >= 37.3 && lat <= 37.4 && lon >= 126.9 && lon <= 127.0) {
+    return {
+      id: 'anyang',
+      placeName: '안양시',
+      addressName: '경기도 안양시',
+      roadAddressName: '경기도 안양시',
+      categoryName: '지역',
+      latitude: lat,
+      longitude: lon,
+    };
+  }
+  
+  // 기타 한국 지역
+  if (lat >= 33.0 && lat <= 38.7 && lon >= 124.0 && lon <= 131.9) {
+    return {
+      id: 'korea_other',
+      placeName: '한국',
+      addressName: '한국',
+      roadAddressName: '한국',
       categoryName: '지역',
       latitude: lat,
       longitude: lon,

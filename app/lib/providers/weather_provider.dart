@@ -100,23 +100,41 @@ class WeatherProvider extends StateNotifier<WeatherState> {
         print('[WeatherProvider] Location error: $locationError');
         print('[WeatherProvider] Error type: ${locationError.runtimeType}');
         
-        // 위치 권한 오류인 경우 에러 상태로 설정하고 fallback 제거
+        // 위치 권한 오류인 경우에만 에러 상태로 설정
         if (locationError is LocationException) {
           print('[WeatherProvider] LocationException detected: ${locationError.message}');
-          state = state.copyWith(
-            isLoading: false,
-            error: '현재 위치를 불러올 수 없음'
-          );
-          return;
+          print('[WeatherProvider] LocationException type: ${locationError.type}');
+          
+          // 권한 관련 오류인 경우에만 에러 상태로 설정
+          if (locationError.type == LocationErrorType.permissionDenied) {
+            print('[WeatherProvider] Permission denied error detected');
+            state = state.copyWith(
+              isLoading: false,
+              error: '현재 위치를 불러올 수 없음'
+            );
+            return;
+          } else if (locationError.type == LocationErrorType.serviceDisabled) {
+            print('[WeatherProvider] Location service disabled error detected');
+            state = state.copyWith(
+              isLoading: false,
+              error: '위치 서비스가 비활성화되어 있습니다'
+            );
+            return;
+          } else {
+            // 다른 위치 오류 (네트워크 오류 등)는 fallback 시도
+            print('[WeatherProvider] Non-permission location error, trying fallback...');
+          }
         } else if (locationError.toString().contains('permission') || 
-                   locationError.toString().contains('Permission') ||
-                   locationError.toString().contains('LocationException')) {
-          print('[WeatherProvider] Location permission error detected');
+                   locationError.toString().contains('Permission')) {
+          print('[WeatherProvider] Location permission error detected (string match)');
           state = state.copyWith(
             isLoading: false,
             error: '현재 위치를 불러올 수 없음'
           );
           return;
+        } else {
+          // 기타 위치 오류는 fallback 시도
+          print('[WeatherProvider] Other location error, trying fallback...');
         }
         
         // 2. 즐겨찾기 도시가 있는지 확인
@@ -209,6 +227,46 @@ class WeatherProvider extends StateNotifier<WeatherState> {
       print('[WeatherProvider] Error fetching weather for location: $e');
       state = state.copyWith(error: '선택한 위치의 날씨 정보를 가져올 수 없습니다: ${e.toString()}', isLoading: false);
       rethrow;
+    }
+  }
+
+  /// 현재 위치 정보를 강제로 새로고침 (더 정확한 위치 정보 획득)
+  Future<void> refreshCurrentLocation() async {
+    print('[WeatherProvider] ===== REFRESH CURRENT LOCATION =====');
+    print('[WeatherProvider] Forcing location refresh for more accurate data...');
+    
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      // 위치 서비스를 통해 더 정확한 위치 정보 획득
+      final locationService = serviceLocator.locationService;
+      final newLocation = await locationService.getCurrentLocation();
+      
+      print('[WeatherProvider] New location obtained: ${newLocation.city}, ${newLocation.country}');
+      print('[WeatherProvider] Coordinates: lat=${newLocation.latitude}, lon=${newLocation.longitude}');
+      
+      // 새로운 위치로 날씨 정보 가져오기
+      final weather = await serviceLocator.weatherService.getWeatherForLocation(
+        newLocation.latitude, 
+        newLocation.longitude, 
+        force: true
+      );
+      
+      final forecast = await serviceLocator.weatherService.getForecastForLocation(
+        newLocation.latitude, 
+        newLocation.longitude
+      );
+      
+      print('[WeatherProvider] Weather updated with new location: ${weather.location.city}');
+      state = state.copyWith(currentWeather: weather, forecast: forecast, isLoading: false);
+      print('[WeatherProvider] ===== REFRESH CURRENT LOCATION SUCCESS =====');
+    } catch (e) {
+      print('[WeatherProvider] ===== REFRESH CURRENT LOCATION FAILED =====');
+      print('[WeatherProvider] Error refreshing location: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: '위치 정보를 새로고침할 수 없습니다: ${e.toString()}'
+      );
     }
   }
 

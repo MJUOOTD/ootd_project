@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import fetch from 'node-fetch';
+import { getAddressFromCoordinates } from './kakaoService.js';
 
 /**
  * WeatherService - OpenWeatherMap API를 통한 날씨 데이터 관리
@@ -538,28 +539,69 @@ async function fetchWeatherForecast(lat, lon) {
  * @param {number} lon - 경도
  * @returns {Object} 변환된 날씨 데이터
  */
-function transformWeatherData(data, lat, lon) {
+async function transformWeatherData(data, lat, lon) {
   const now = new Date();
   const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
   const currentHour = koreaTime.getHours();
   
-  // 실제 GPS 좌표 기반 정확한 한국 주소 체계 적용
-  const cityName = getCityNameFromAPI(data);
-  const country = getDistrictFromAPI(data);
-  
-  // 한국 주소 체계에 맞게 정확한 위치 정보 구성
-  // 시/도/군/구/동/리 체계를 실제 좌표 기반으로 결정
-  const addressInfo = getAccurateKoreanAddress(lat, lon, cityName);
-  
-  const locationInfo = {
-    city: addressInfo.city,
-    country: country,
-    district: addressInfo.district,
-    subLocality: addressInfo.subLocality,
-    province: addressInfo.province
+  // Kakao API를 사용한 정확한 위치 정보 가져오기
+  let locationInfo = {
+    city: 'Unknown',
+    country: '대한민국',
+    district: null,
+    subLocality: null,
+    province: null
   };
   
-  console.log(`[WeatherService] Accurate Korean address: ${addressInfo.city} ${addressInfo.district || ''} ${addressInfo.subLocality || ''} ${addressInfo.province || ''}`.trim());
+  try {
+    console.log(`[WeatherService] Getting accurate location from Kakao API for lat=${lat}, lon=${lon}`);
+    const kakaoResult = await getAddressFromCoordinates(lat, lon);
+    
+    if (kakaoResult) {
+      console.log(`[WeatherService] Kakao API result: ${kakaoResult.placeName} - ${kakaoResult.addressName}`);
+      
+      // Kakao API 결과에서 정확한 위치 정보 추출
+      locationInfo = {
+        city: kakaoResult.placeName || 'Unknown',
+        country: '대한민국',
+        district: kakaoResult.districtName || null,
+        subLocality: null,
+        province: '경기도' // Kakao API는 한국 내에서만 사용
+      };
+      
+      console.log(`[WeatherService] ✅ Accurate location from Kakao API: ${locationInfo.city} ${locationInfo.district || ''}`);
+    } else {
+      console.log(`[WeatherService] ⚠️ Kakao API failed, using fallback`);
+      // Fallback: OpenWeatherMap API 결과 사용
+      const cityName = getCityNameFromAPI(data);
+      const country = getDistrictFromAPI(data);
+      const addressInfo = getAccurateKoreanAddress(lat, lon, cityName);
+      
+      locationInfo = {
+        city: addressInfo.city,
+        country: country,
+        district: addressInfo.district,
+        subLocality: addressInfo.subLocality,
+        province: addressInfo.province
+      };
+    }
+  } catch (error) {
+    console.log(`[WeatherService] ❌ Kakao API error: ${error.message}, using fallback`);
+    // Fallback: OpenWeatherMap API 결과 사용
+    const cityName = getCityNameFromAPI(data);
+    const country = getDistrictFromAPI(data);
+    const addressInfo = getAccurateKoreanAddress(lat, lon, cityName);
+    
+    locationInfo = {
+      city: addressInfo.city,
+      country: country,
+      district: addressInfo.district,
+      subLocality: addressInfo.subLocality,
+      province: addressInfo.province
+    };
+  }
+  
+  console.log(`[WeatherService] Final location info: ${locationInfo.city} ${locationInfo.district || ''} ${locationInfo.subLocality || ''} ${locationInfo.province || ''}`.trim());
   console.log(`[WeatherService] Coordinates: lat=${lat}, lon=${lon}`);
   
   // 일출/일몰 시간 추출 (한국 시간으로 변환)
@@ -599,7 +641,7 @@ function transformWeatherData(data, lat, lon) {
  * @param {number} lon - 경도
  * @returns {Array} 변환된 예보 데이터 배열
  */
-function transformForecastData(data, lat, lon) {
+async function transformForecastData(data, lat, lon) {
   const now = new Date();
   // 한국 시간대 (UTC+9) 정확한 계산
   const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
@@ -610,13 +652,64 @@ function transformForecastData(data, lat, lon) {
   console.log(`[WeatherService] Current Korea time: ${koreaTime.toISOString()}`);
   console.log(`[WeatherService] Current hour: ${currentHour}, minute: ${currentMinute}`);
   
-  // 첫 번째 아이템에서 도시 정보 가져오기
-  const firstItem = data.list[0];
-  const cityName = getCityNameFromAPI(firstItem);
-  const country = getDistrictFromAPI(firstItem);
+  // Kakao API를 사용한 정확한 위치 정보 가져오기
+  let locationInfo = {
+    city: 'Unknown',
+    country: '대한민국',
+    district: null,
+    subLocality: null,
+    province: null
+  };
   
-  // 실제 GPS 좌표 기반 정확한 한국 주소 체계 적용
-  const addressInfo = getAccurateKoreanAddress(lat, lon, cityName);
+  try {
+    console.log(`[WeatherService] Getting accurate location from Kakao API for forecast lat=${lat}, lon=${lon}`);
+    const kakaoResult = await getAddressFromCoordinates(lat, lon);
+    
+    if (kakaoResult) {
+      console.log(`[WeatherService] Kakao API result for forecast: ${kakaoResult.placeName} - ${kakaoResult.addressName}`);
+      
+      // Kakao API 결과에서 정확한 위치 정보 추출
+      locationInfo = {
+        city: kakaoResult.placeName || 'Unknown',
+        country: '대한민국',
+        district: kakaoResult.districtName || null,
+        subLocality: null,
+        province: '경기도' // Kakao API는 한국 내에서만 사용
+      };
+      
+      console.log(`[WeatherService] ✅ Accurate location from Kakao API for forecast: ${locationInfo.city} ${locationInfo.district || ''}`);
+    } else {
+      console.log(`[WeatherService] ⚠️ Kakao API failed for forecast, using fallback`);
+      // Fallback: OpenWeatherMap API 결과 사용
+      const firstItem = data.list[0];
+      const cityName = getCityNameFromAPI(firstItem);
+      const country = getDistrictFromAPI(firstItem);
+      const addressInfo = getAccurateKoreanAddress(lat, lon, cityName);
+      
+      locationInfo = {
+        city: addressInfo.city,
+        country: country,
+        district: addressInfo.district,
+        subLocality: addressInfo.subLocality,
+        province: addressInfo.province
+      };
+    }
+  } catch (error) {
+    console.log(`[WeatherService] ❌ Kakao API error for forecast: ${error.message}, using fallback`);
+    // Fallback: OpenWeatherMap API 결과 사용
+    const firstItem = data.list[0];
+    const cityName = getCityNameFromAPI(firstItem);
+    const country = getDistrictFromAPI(firstItem);
+    const addressInfo = getAccurateKoreanAddress(lat, lon, cityName);
+    
+    locationInfo = {
+      city: addressInfo.city,
+      country: country,
+      district: addressInfo.district,
+      subLocality: addressInfo.subLocality,
+      province: addressInfo.province
+    };
+  }
   
   // 일출/일몰 시간 (예보 API에서는 제공하지 않으므로 기본값 사용)
   // 실제로는 현재 날씨 API에서 가져온 정보를 사용하는 것이 좋음
@@ -624,14 +717,7 @@ function transformForecastData(data, lat, lon) {
   const sunsetHour = 18; // 기본값
   
   console.log(`[WeatherService] Using default sunrise: ${sunriseHour}:00, sunset: ${sunsetHour}:00`);
-  
-  const locationInfo = {
-    city: addressInfo.city,
-    country: country,
-    district: addressInfo.district,
-    subLocality: addressInfo.subLocality,
-    province: addressInfo.province
-  };
+  console.log(`[WeatherService] Final location info for forecast: ${locationInfo.city} ${locationInfo.district || ''} ${locationInfo.subLocality || ''} ${locationInfo.province || ''}`.trim());
   
   // 3시간 간격 예보에서 현재 시간과 가장 가까운 시간을 찾기
   const allForecasts = data.list
@@ -847,7 +933,7 @@ export async function getCurrentWeather(lat, lon, options = {}) {
 
   try {
     const data = await fetchCurrentWeather(lat, lon);
-    const transformed = transformWeatherData(data, lat, lon);
+    const transformed = await transformWeatherData(data, lat, lon);
     
     setCachedData(cacheKey, transformed);
     return transformed;
@@ -881,7 +967,7 @@ export async function getWeatherForecast(lat, lon) {
 
   try {
     const data = await fetchWeatherForecast(lat, lon);
-    const transformed = transformForecastData(data, lat, lon);
+    const transformed = await transformForecastData(data, lat, lon);
     
     setCachedData(cacheKey, transformed);
     return transformed;

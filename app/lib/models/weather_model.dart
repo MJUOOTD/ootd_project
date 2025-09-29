@@ -195,15 +195,26 @@ class Location {
   String get formattedLocation {
     List<String> parts = [];
     
-    // 한국 주소 체계에 맞게 표시: 시/도/군/구/동/리
-    if (city.isNotEmpty) {
+    // "globe"나 부정확한 값들을 필터링
+    if (city.isNotEmpty && city != 'globe' && city != 'Unknown' && city != 'Current Location') {
       parts.add(city);
     }
-    if (district != null && district!.isNotEmpty) {
+    if (district != null && 
+        district!.isNotEmpty && 
+        district != 'globe' && 
+        district != 'Unknown') {
       parts.add(district!);
     }
-    if (subLocality != null && subLocality!.isNotEmpty) {
+    if (subLocality != null && 
+        subLocality!.isNotEmpty && 
+        subLocality != 'globe' && 
+        subLocality != 'Unknown') {
       parts.add(subLocality!);
+    }
+    
+    // 위치 정보가 없거나 부정확한 경우 기본값 반환
+    if (parts.isEmpty) {
+      return '현재 위치';
     }
     
     return parts.join(' ');
