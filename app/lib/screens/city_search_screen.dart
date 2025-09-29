@@ -253,8 +253,6 @@ class _CitySearchScreenState extends ConsumerState<CitySearchScreen> {
           ),
           // 현재 위치(캐시) 복원 섹션
           _buildCurrentLocationRestore(ref),
-          // 현재 위치(캐시) 복원 섹션
-          _buildCurrentLocationRestore(ref),
           // 자동완성 드롭다운 제안 패널
           if (_searchFocusNode.hasFocus && _searchController.text.length >= 2)
             _buildSuggestionDropdown(),
