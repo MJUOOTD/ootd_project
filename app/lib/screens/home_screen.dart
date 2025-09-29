@@ -39,9 +39,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _initializeData() async {
-    // WeatherProvider의 notifier를 통해 메서드 호출
-    await ref.read(weatherProvider.notifier).fetchCurrentWeather();
-
+    // StateNotifierProvider는 .notifier를 사용
+    final weatherNotifier = ref.read(weatherProvider.notifier);
+    await weatherNotifier.fetchCurrentWeather();
     if (!mounted) return;
 
     // Read the provider's state to check values.
@@ -62,9 +62,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _refreshData() async {
-    // WeatherProvider의 notifier를 통해 메서드 호출
-    await ref.read(weatherProvider.notifier).refreshWeather();
-
+    // StateNotifierProvider는 .notifier를 사용
+    final weatherNotifier = ref.read(weatherProvider.notifier);
+    await weatherNotifier.refreshWeather();
     if (!mounted) return;
 
     final userState = ref.read(userProvider);
@@ -125,8 +125,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   break;
               }
             },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
+            itemBuilder: (BuildContext context) => const [
+              PopupMenuItem<String>(
                 value: 'feedback',
                 child: Text('피드백 보내기'),
               ),
@@ -180,7 +180,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 24),
+          // 인삿말 영역
+          _buildGreeting(userState.isLoggedIn ? userState.currentUser : null),
+          const SizedBox(height: 16),
+
+          const SizedBox(height: 8),
           
           // 현재 날씨 섹션
           if (weatherState.isLoading)
@@ -192,8 +196,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             )
           else
             _buildWeatherErrorSection(weatherState.error ?? '날씨 정보를 가져올 수 없습니다'),
-                  
-          const SizedBox(height: 24),
+          
+          const SizedBox(height: 16),
           
           // 추천 섹션 (항상 표시)
           _buildRecommendationsSection(),
@@ -221,6 +225,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       },
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+    );
+  }
+
+  // 인삿말 빌더
+  Widget _buildGreeting(dynamic user) {
+    final time = DateTime.now().hour;
+    String greeting;
+    if (time < 12) {
+      greeting = 'Good Morning';
+    } else if (time < 17) {
+      greeting = 'Good Afternoon';
+    } else {
+      greeting = 'Good Evening';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 4),
+        Text(
+          greeting,
+          style: const TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF030213),
+          ),
+        ),
+        Text(
+          user?.name ?? 'User',
+          style: const TextStyle(
+            fontSize: 18,
+            color: Color(0xFF666666),
+          ),
+        ),
+      ],
     );
   }
 
@@ -270,12 +309,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildRecommendationsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: const [
         // 시간대별 추천 (항상 표시)
-        const HourlyRecommendationWidget(),
-        const SizedBox(height: 24),
+        HourlyRecommendationWidget(),
+        SizedBox(height: 24),
         // 상황별 추천 (항상 표시)
-        const SituationRecommendationWidget(),
+        SituationRecommendationWidget(),
       ],
     );
   }
@@ -305,10 +344,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              children: [
-                const Icon(Icons.location_off, size: 20, color: Colors.red),
-                const SizedBox(width: 8),
-                const Text(
+              children: const [
+                Icon(Icons.location_off, size: 20, color: Colors.red),
+                SizedBox(width: 8),
+                Text(
                   '위치 권한 필요',
                   style: TextStyle(
                     fontSize: 14,
@@ -316,19 +355,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     color: Colors.red,
                   ),
                 ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _isNotificationDismissed = true;
-                    });
-                  },
-                  child: const Icon(Icons.close, size: 18, color: Colors.grey),
-                ),
+                Spacer(),
+                Icon(Icons.close, size: 18, color: Colors.grey),
               ],
             ),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: 8),
+            Text(
               '정확한 날씨 정보를 위해 위치 권한을 허용해주세요.',
               style: TextStyle(
                 fontSize: 12,

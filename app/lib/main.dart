@@ -1,29 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'app_router.dart';
 import 'services/service_locator.dart';
-import 'services/app_initializer.dart';
+import 'services/favorites_service.dart';
 import 'theme/app_theme.dart';
-import 'firebase_options.dart';
-import 'package:flutter/foundation.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'services/pexels_api_service.dart';
 import 'providers/user_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Firebase 초기화
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   
   // ProviderContainer 생성
   final container = ProviderContainer();
   
-  try {
-    // AppInitializer를 통한 순서대로 초기화
-    await AppInitializer.initialize(ref: container);
-  } catch (e) {
-    debugPrint('[main] App initialization failed: $e');
-    // 초기화 실패해도 앱은 실행 (위치 권한 없이도 사용 가능)
-  }
+  await serviceLocator.initialize();
+  // Pexels API 키 설정
+  PexelsApiService.setApiKey('QwYk7NDUowPtA83vo1RHNYSHCWWnDTd8MNlm8giDiGq8blf1iPAHu1DP');
+  // 즐겨찾기 서비스 초기화
+  await FavoritesService.initialize();
   
   runApp(
     UncontrolledProviderScope(
