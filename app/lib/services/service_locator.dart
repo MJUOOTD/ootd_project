@@ -3,6 +3,7 @@ import 'weather/weather_service.dart';
 import 'weather/backend_weather_service.dart';
 import 'temperature_settings_service.dart';
 import 'temperature_settings_initializer.dart';
+import 'user_service.dart';
 import 'auth_service.dart';
 
 /// Service locator for dependency injection
@@ -26,6 +27,7 @@ class ServiceLocator {
   TemperatureSettingsService? _temperatureSettingsService;
   TemperatureSettingsInitializer? _temperatureSettingsInitializer;
   AuthService? _authService;
+  UserService? _userService;
 
   /// Get location service instance
   LocationService get locationService {
@@ -51,6 +53,12 @@ class ServiceLocator {
     return _temperatureSettingsInitializer!;
   }
 
+  /// Get user service instance
+  UserService get userService {
+    _userService ??= UserService();
+    return _userService!;
+  }
+
   /// Get auth service instance
   AuthService get authService {
     _authService ??= AuthService();
@@ -66,6 +74,7 @@ class ServiceLocator {
     _temperatureSettingsService = TemperatureSettingsService();
     _temperatureSettingsInitializer = TemperatureSettingsInitializer();
     _authService = AuthService();
+    _userService = UserService();
   }
 
   /// Reset all services (useful for testing)
@@ -75,6 +84,7 @@ class ServiceLocator {
     _temperatureSettingsService = null;
     _temperatureSettingsInitializer = null;
     _authService = null;
+    _userService = null;
   }
 
   /// Check if all required services are available
@@ -83,7 +93,8 @@ class ServiceLocator {
       _weatherService != null &&
       _temperatureSettingsService != null &&
       _temperatureSettingsInitializer != null &&
-      _authService != null;
+      _authService != null &&
+      _userService != null;
 }
 
 /// Global service locator instance

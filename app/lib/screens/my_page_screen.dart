@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/user_provider.dart';
+import '../models/user_model.dart';
 
 class MyPageScreen extends ConsumerStatefulWidget {
   const MyPageScreen({super.key});
@@ -321,7 +322,7 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
                     context,
                         icon: Icons.person_outline,
                         title: '프로필 수정',
-                        onTap: () => _showComingSoon(context, '프로필 수정'),
+                        onTap: () => _showProfileEditDialog(context),
                       ),
                       _buildDivider(),
                       _buildMenuItem(
@@ -473,6 +474,239 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
     );
   }
 
+
+  void _showProfileEditDialog(BuildContext context) {
+    final userState = ref.read(userProvider);
+    final currentUser = userState.currentUser;
+    
+    if (currentUser == null) return;
+    
+    // Form controllers
+    final nameController = TextEditingController(text: currentUser.name);
+    final ageController = TextEditingController(text: currentUser.age.toString());
+    String selectedGender = currentUser.gender;
+    String selectedActivityLevel = currentUser.activityLevel;
+    TemperatureSensitivity selectedTemperatureSensitivity = currentUser.temperatureSensitivity;
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('프로필 수정'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 이름
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: '이름',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // 나이
+                TextField(
+                  controller: ageController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: '나이',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // 성별
+                DropdownButtonFormField<String>(
+                  value: selectedGender,
+                  decoration: const InputDecoration(
+                    labelText: '성별',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: ['남성', '여성'].map((gender) {
+                    return DropdownMenuItem(
+                      value: gender,
+                      child: Text(gender),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        selectedGender = value;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // 활동 수준
+                DropdownButtonFormField<String>(
+                  value: selectedActivityLevel,
+                  decoration: const InputDecoration(
+                    labelText: '활동 수준',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: ['낮음', '보통', '높음'].map((level) {
+                    return DropdownMenuItem(
+                      value: level,
+                      child: Text(level),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        selectedActivityLevel = value;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // 체감온도 민감도
+                DropdownButtonFormField<TemperatureSensitivity>(
+                  value: selectedTemperatureSensitivity,
+                  decoration: const InputDecoration(
+                    labelText: '체감온도 민감도',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: TemperatureSensitivity.values.map((sensitivity) {
+                    String label;
+                    switch (sensitivity) {
+                      case TemperatureSensitivity.veryCold:
+                        label = '매우 추위를 탐';
+                        break;
+                      case TemperatureSensitivity.cold:
+                        label = '추위를 많이 탐';
+                        break;
+                      case TemperatureSensitivity.normal:
+                        label = '보통';
+                        break;
+                      case TemperatureSensitivity.hot:
+                        label = '더위를 많이 탐';
+                        break;
+                      case TemperatureSensitivity.veryHot:
+                        label = '매우 더위를 탐';
+                        break;
+                    }
+                    return DropdownMenuItem(
+                      value: sensitivity,
+                      child: Text(label),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        selectedTemperatureSensitivity = value;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소'),
+            ),
+            ElevatedButton(
+              onPressed: () => _saveProfile(
+                context,
+                nameController.text,
+                int.tryParse(ageController.text) ?? currentUser.age,
+                selectedGender,
+                selectedActivityLevel,
+                selectedTemperatureSensitivity,
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('저장'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _saveProfile(
+    BuildContext context,
+    String name,
+    int age,
+    String gender,
+    String activityLevel,
+    TemperatureSensitivity temperatureSensitivity,
+  ) async {
+    final userState = ref.read(userProvider);
+    final currentUser = userState.currentUser;
+    
+    if (currentUser == null) return;
+    
+    // 입력 검증
+    if (name.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('이름을 입력해주세요')),
+      );
+      return;
+    }
+    
+    if (age < 1 || age > 120) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('나이를 올바르게 입력해주세요')),
+      );
+      return;
+    }
+    
+    // 사용자 정보 업데이트
+    final updatedUser = currentUser.copyWith(
+      name: name.trim(),
+      age: age,
+      gender: gender,
+      activityLevel: activityLevel,
+      temperatureSensitivity: temperatureSensitivity,
+      updatedAt: DateTime.now(),
+    );
+    
+    // 로딩 표시
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+    
+    try {
+      // userProvider의 updateUser 호출 (Firestore + TemperatureSettings 업데이트)
+      await ref.read(userProvider.notifier).updateUser(updatedUser);
+      
+      if (mounted) {
+        Navigator.pop(context); // 로딩 다이얼로그 닫기
+        Navigator.pop(context); // 프로필 수정 다이얼로그 닫기
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('프로필이 성공적으로 저장되었습니다'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // 로딩 다이얼로그 닫기
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('프로필 저장 중 오류가 발생했습니다: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   void _showAppInfo(BuildContext context) {
     showDialog(

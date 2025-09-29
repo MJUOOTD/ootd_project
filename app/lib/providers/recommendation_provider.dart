@@ -4,6 +4,7 @@ import '../models/outfit_model.dart';
 import '../models/user_model.dart';
 import '../models/weather_model.dart';
 import '../services/recommendation_service.dart';
+import '../services/recommendation_api_service.dart';
 
 class RecommendationProvider with ChangeNotifier {
   List<OutfitRecommendation> _recommendations = [];
@@ -29,14 +30,26 @@ class RecommendationProvider with ChangeNotifier {
     _clearError();
 
     try {
-      _currentOccasion = occasion ?? 'casual';
-      
-      _recommendations = await RecommendationService.getRecommendations(
-        weather: weather,
-        user: user,
-        occasion: _currentOccasion,
-        limit: 5,
-      );
+      _currentOccasion = occasion ?? 'daily';
+
+      // 1) 서버 추천 우선 시도
+      try {
+        final api = RecommendationApiService();
+        final serverRec = await api.getServerRecommendation(
+          weather: weather,
+          user: user,
+          occasion: _currentOccasion,
+        );
+        _recommendations = [serverRec];
+      } catch (_) {
+        // 2) 실패 시 로컬 규칙 폴백
+        _recommendations = await RecommendationService.getRecommendations(
+          weather: weather,
+          user: user,
+          occasion: _currentOccasion,
+          limit: 5,
+        );
+      }
 
       // Select first recommendation by default
       if (_recommendations.isNotEmpty) {

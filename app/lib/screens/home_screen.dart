@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/weather_provider.dart';
 import '../providers/user_provider.dart';
+import '../models/user_model.dart';
 import '../providers/recommendation_provider.dart';
 import '../providers/location_permission_provider.dart';
 import '../widgets/weather_widget.dart';
@@ -49,14 +50,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     // 추천 생성 (날씨가 있으면 항상)
     if (weatherState.currentWeather != null) {
-      // 로그인된 경우에만 추천 생성
-      if (userState.isLoggedIn) {
-        await ref.read(recommendationProvider.notifier).generateRecommendations(
-          weather: weatherState.currentWeather!,
-          user: userState.currentUser!,
-        );
-        if (!mounted) return;
-      }
+      final UserModel userForRec = userState.isLoggedIn
+          ? userState.currentUser!
+          : _guestUser();
+      await ref.read(recommendationProvider.notifier).generateRecommendations(
+        weather: weatherState.currentWeather!,
+        user: userForRec,
+      );
+      if (!mounted) return;
     }
   }
 
@@ -71,14 +72,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     // 추천 새로고침 (날씨가 있으면 항상)
     if (weatherState.currentWeather != null) {
-      // 로그인된 경우에만 추천 새로고침
-      if (userState.isLoggedIn) {
-        await ref.read(recommendationProvider.notifier).refreshRecommendations(
-          weather: weatherState.currentWeather!,
-          user: userState.currentUser!,
-        );
-        if (!mounted) return;
-      }
+      final UserModel userForRec = userState.isLoggedIn
+          ? userState.currentUser!
+          : _guestUser();
+      await ref.read(recommendationProvider.notifier).refreshRecommendations(
+        weather: weatherState.currentWeather!,
+        user: userForRec,
+      );
+      if (!mounted) return;
     }
   }
 
@@ -201,6 +202,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  // 비로그인 게스트 사용자 기본값
+  UserModel _guestUser() {
+    return UserModel(
+      id: 'guest',
+      name: 'Guest',
+      email: '',
+      gender: '남성',
+      age: 25,
+      bodyType: '보통',
+      activityLevel: '보통',
+      temperatureSensitivity: TemperatureSensitivity.normal,
+      stylePreferences: const ['캐주얼', '깔끔한'],
+      situationPreferences: const {
+        '출근': true,
+        '데이트': true,
+        '운동': false,
+      },
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
   /// 날씨 에러 섹션
   Widget _buildWeatherErrorSection(String error) {
     return Container(
@@ -248,15 +271,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '오늘의 추천',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF030213),
-          ),
-        ),
-        const SizedBox(height: 16),
         // 시간대별 추천 (항상 표시)
         const HourlyRecommendationWidget(),
         const SizedBox(height: 24),

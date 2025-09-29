@@ -66,7 +66,13 @@ class HourlyRecommendationWidget extends ConsumerWidget {
                   final displayHour = (now.hour + index) % 24;
                   final timeSlot = _getTimeSlot(displayHour);
                   final weatherEmoji = _getWeatherEmoji(displayHour);
-                  final recommendation = _getRecommendation(displayHour);
+                  final recState = recommendationState;
+                  final selected = recState.selectedRecommendation;
+                  final recommendation = selected != null
+                      ? (selected.outfit.items.isNotEmpty
+                          ? _toKoreanItems(selected.outfit.items).take(2).join(', ')
+                          : selected.outfit.title)
+                      : '추천 준비 중';
                   final temperature = _getTemperature(displayHour);
 
                   return Container(
@@ -149,6 +155,41 @@ class HourlyRecommendationWidget extends ConsumerWidget {
     );
   }
 
+  List<String> _toKoreanItems(List<String> items) {
+    final map = <String, String>{
+      't_shirt': '티셔츠',
+      'long_sleeve': '긴팔 티',
+      'cardigan': '카디건',
+      'sweater': '스웨터',
+      'hoodie': '후디',
+      'shirt': '셔츠',
+      'blouse': '블라우스',
+      'jeans': '청바지',
+      'pants': '바지',
+      'dress_pants': '슬랙스',
+      'shorts': '반바지',
+      'skirt': '스커트',
+      'jacket': '자켓',
+      'light_jacket': '가벼운 자켓',
+      'coat': '코트',
+      'blazer': '블레이저',
+      'leather_jacket': '레더 자켓',
+      'raincoat': '방수 재킷',
+      'umbrella': '우산',
+      'waterproof_shoes': '방수화',
+      'boots': '부츠',
+      'sneakers': '스니커즈',
+      'dress_shoes': '드레스 슈즈',
+      'running_shoes': '러닝화',
+      'sandals': '샌들',
+      'hat': '모자',
+      'scarf': '머플러',
+      'gloves': '장갑',
+      'watch': '시계',
+      'handbag': '가방',
+    };
+    return items.map((e) => map[e] ?? e).toList();
+  }
   String _getTimeSlot(int hour) {
     final displayHour = hour % 24;
     return '${displayHour.toString().padLeft(2, '0')}:00';

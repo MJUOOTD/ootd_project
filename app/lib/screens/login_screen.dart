@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/user_provider.dart';
-import '../models/user_model.dart';
 import '../services/simple_auth_service.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -306,27 +305,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
 
       if (userCredential.user != null) {
-        // 로그인 성공 시 UserProvider 업데이트
+        // 로그인 성공 시에는 온보딩 완료(초기화) 호출 금지
+        // 기존 사용자 데이터 유지 위해 초기화만 수행
         final userProviderNotifier = ref.read(userProvider.notifier);
-        
-        // Firebase에서 사용자 정보를 가져와서 UserModel 생성
-        final user = userProviderNotifier.createUser(
-          name: _idController.text,
-          email: userCredential.user!.email ?? '${_idController.text}@example.com',
-          gender: '남성',
-          age: 25,
-          bodyType: '보통',
-          activityLevel: '보통',
-          temperatureSensitivity: TemperatureSensitivity.normal,
-          stylePreferences: ['캐주얼', '깔끔한'],
-          situationPreferences: {
-            '출근': true,
-            '데이트': true,
-            '운동': false,
-          },
-        );
-
-        await userProviderNotifier.completeOnboarding(user);
+        await userProviderNotifier.initialize();
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

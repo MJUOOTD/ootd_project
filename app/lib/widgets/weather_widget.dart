@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ootd_app/providers/weather_provider.dart';
+import 'package:ootd_app/providers/recommendation_provider.dart';
 import 'package:ootd_app/models/weather_model.dart';
 
 class WeatherWidget extends ConsumerWidget {
@@ -16,6 +17,7 @@ class WeatherWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(weatherProvider);
+    final recState = ref.watch(recommendationProvider);
     final w = weather ?? state.currentWeather;
     final isLoading = state.isLoading;
 
@@ -197,7 +199,7 @@ class WeatherWidget extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    _getRecommendedOutfit(w.temperature),
+                    _buildDynamicRecommendation(recState) ?? _getRecommendedOutfit(w.temperature),
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.blue[800],
@@ -211,6 +213,19 @@ class WeatherWidget extends ConsumerWidget {
         ],
       ),
     );
+  }
+  String? _buildDynamicRecommendation(RecommendationProvider recState) {
+    final selected = recState.selectedRecommendation;
+    if (selected == null) return null;
+    final items = selected.outfit.items;
+    if (items.isNotEmpty) {
+      final main = items.take(3).join(', ');
+      return '오늘의 추천: $main';
+    }
+    if (selected.reason.isNotEmpty) {
+      return selected.reason;
+    }
+    return null;
   }
 
   Widget _buildSkeleton() {
