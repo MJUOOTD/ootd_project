@@ -105,12 +105,12 @@ class _HourlyRecommendationWidgetState extends ConsumerState<HourlyRecommendatio
                 ),
               ),
             ] else ...[
-              // 가로 스크롤 시간대 카드
+              // 가로 스크롤 시간대 카드 (3일 후까지)
               SizedBox(
-                height: 100,
+                height: 120,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: forecast.isNotEmpty ? forecast.length : 20,
+                  itemCount: forecast.isNotEmpty ? forecast.length : 24, // 3일 * 8시간 = 24개
                   itemBuilder: (context, index) {
                     if (forecast.isNotEmpty && index < forecast.length) {
                       // 백엔드에서 이미 정렬된 데이터를 사용
@@ -121,7 +121,7 @@ class _HourlyRecommendationWidgetState extends ConsumerState<HourlyRecommendatio
                       
                       final displayHour = weatherTime.hour;
                       final displayMinute = weatherTime.minute;
-                      final timeSlot = _getTimeSlot(displayHour, displayMinute);
+                      final timeSlot = _getTimeSlotWithDate(weatherTime, displayHour, displayMinute);
                       final weatherEmoji = _getWeatherEmojiFromCondition(weather.condition, displayHour);
                       final recommendation = _getRecommendationFromTemperature(weather.temperature);
                       final temperature = weather.temperature.round();
@@ -197,7 +197,7 @@ class _HourlyRecommendationWidgetState extends ConsumerState<HourlyRecommendatio
   ) {
     return Container(
       width: 80,
-      height: 100,
+      height: 120,
       margin: const EdgeInsets.only(right: 16),
       child: InkWell(
         onTap: () => _showAlternativeOptions(context, displayHour),
@@ -208,10 +208,11 @@ class _HourlyRecommendationWidgetState extends ConsumerState<HourlyRecommendatio
             Text(
               isCurrent ? '지금' : timeSlot,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w500,
                 color: Colors.black87,
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
             Text(
@@ -249,6 +250,28 @@ class _HourlyRecommendationWidgetState extends ConsumerState<HourlyRecommendatio
       return '${displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
     }
     return '${displayHour.toString().padLeft(2, '0')}:00';
+  }
+
+  String _getTimeSlotWithDate(DateTime weatherTime, int hour, int minute) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final weatherDay = DateTime(weatherTime.year, weatherTime.month, weatherTime.day);
+    
+    final displayHour = hour % 24;
+    final timeString = '${displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+    
+    // 날짜 차이 계산
+    final dayDifference = weatherDay.difference(today).inDays;
+    
+    if (dayDifference == 0) {
+      return timeString; // 오늘
+    } else if (dayDifference == 1) {
+      return '내일\n$timeString';
+    } else if (dayDifference == 2) {
+      return '모레\n$timeString';
+    } else {
+      return '${weatherTime.month}/${weatherTime.day}\n$timeString';
+    }
   }
 
 

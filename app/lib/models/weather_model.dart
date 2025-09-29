@@ -228,3 +228,24 @@ enum WeatherCategory {
   hot,     // > 25°C
   rainy,   // precipitation > 0.1mm
 }
+
+enum WeatherErrorType {
+  networkError,
+  apiError,
+  invalidApiKey,
+  locationError,
+  parseError,
+  cacheError,
+  unknown,
+}
+
+class WeatherException implements Exception {
+  final String message;
+  final WeatherErrorType type;
+  final int? statusCode;
+
+  WeatherException(this.message, this.type, {this.statusCode});
+
+  @override
+  String toString() => 'WeatherException: $message (Type: $type)';
+}

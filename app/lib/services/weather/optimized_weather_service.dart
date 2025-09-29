@@ -13,7 +13,7 @@ import 'weather_service.dart';
 /// - Mock 데이터 fallback
 /// - 단일 캐시 로직
 class OptimizedWeatherService implements WeatherService {
-  static const Duration _timeout = Duration(seconds: 10);
+  static const Duration _timeout = Duration(seconds: 15);
   static const Duration _cacheTtl = Duration(minutes: 2);
   static final String _defaultBaseUrl = getDefaultBackendBaseUrl();
   
@@ -119,7 +119,13 @@ class OptimizedWeatherService implements WeatherService {
     
     try {
       print('[OptimizedWeatherService] Sending HTTP GET request...');
-      final response = await http.get(uri).timeout(_timeout);
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ).timeout(_timeout);
       
       print('[OptimizedWeatherService] ===== API RESPONSE RECEIVED =====');
       print('[OptimizedWeatherService] Status Code: ${response.statusCode}');
@@ -151,6 +157,17 @@ class OptimizedWeatherService implements WeatherService {
       print('[OptimizedWeatherService] Error Type: ${e.runtimeType}');
       print('[OptimizedWeatherService] Error Message: $e');
       print('[OptimizedWeatherService] Error Stack: ${e.toString()}');
+      
+      // 네트워크 연결 오류인 경우 더 명확한 메시지 제공
+      if (e.toString().contains('Connection refused') || 
+          e.toString().contains('Failed to connect') ||
+          e.toString().contains('SocketException')) {
+        throw WeatherException(
+          '백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.',
+          WeatherErrorType.networkError
+        );
+      }
+      
       rethrow;
     }
   }

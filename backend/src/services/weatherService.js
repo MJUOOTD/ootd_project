@@ -720,6 +720,8 @@ async function transformForecastData(data, lat, lon) {
   console.log(`[WeatherService] Final location info for forecast: ${locationInfo.city} ${locationInfo.district || ''} ${locationInfo.subLocality || ''} ${locationInfo.province || ''}`.trim());
   
   // 3시간 간격 예보에서 현재 시간과 가장 가까운 시간을 찾기
+  console.log(`[WeatherService] Total forecast items from API: ${data.list.length}`);
+  console.log(`[WeatherService] First few timestamps:`, data.list.slice(0, 5).map(item => new Date(item.dt * 1000).toISOString()));
   const allForecasts = data.list
     .map(item => {
       const itemTime = new Date(item.dt * 1000);
@@ -743,8 +745,8 @@ async function transformForecastData(data, lat, lon) {
       };
     })
     .filter(item => {
-      // 현재 시간 이후의 데이터만 포함 (현재 시간 포함)
-      return item.timeDiff >= 0;
+      // 모든 데이터 포함 (현재 시간 이전/이후 모두)
+      return true;
     })
     .sort((a, b) => {
       // 시간 순서대로 정렬
@@ -771,58 +773,13 @@ async function transformForecastData(data, lat, lon) {
     console.log(`[WeatherService] No item close enough to current time (minTimeDiff: ${minTimeDiff} minutes)`);
   }
   
-  // 가장 가까운 시간부터 8개까지 선택
-  let filteredAndSorted = allForecasts.slice(closestIndex, closestIndex + 8);
+  // 현재 시간부터 5일 후까지의 모든 예보 선택 (최대 40개, 3시간 간격)
+  const maxForecasts = Math.min(40, allForecasts.length); // OpenWeather API는 최대 40개 제공
+  let filteredAndSorted = allForecasts.slice(0, maxForecasts);
   
-  // 3시간 간격을 유지하면서 연속된 시간대만 선택
-  const continuousForecasts = [];
-  let lastHour = -1;
+  console.log(`[WeatherService] Selected ${filteredAndSorted.length} forecast items`);
   
-  for (const item of filteredAndSorted) {
-    // 첫 번째 항목이거나 정확히 3시간 간격인 경우만 포함
-    if (lastHour === -1) {
-      continuousForecasts.push(item);
-      lastHour = item.hour;
-    } else {
-      // 3시간 간격인지 확인 (00:00은 24:00으로 처리)
-      const currentHour = item.hour === 0 ? 24 : item.hour;
-      const prevHour = lastHour === 0 ? 24 : lastHour;
-      const hourDiff = currentHour - prevHour;
-      
-      if (hourDiff === 3) {
-        continuousForecasts.push(item);
-        lastHour = item.hour;
-      }
-    }
-    
-    // 8개까지만 선택
-    if (continuousForecasts.length >= 8) break;
-  }
-  
-  // 만약 8개 미만이면 다음 날 예보도 포함
-  if (continuousForecasts.length < 8) {
-    const remainingItems = allForecasts.slice(closestIndex + continuousForecasts.length);
-    for (const item of remainingItems) {
-      if (continuousForecasts.length >= 8) break;
-      
-      // 3시간 간격인지 확인
-      if (lastHour === -1) {
-        continuousForecasts.push(item);
-        lastHour = item.hour;
-      } else {
-        const currentHour = item.hour === 0 ? 24 : item.hour;
-        const prevHour = lastHour === 0 ? 24 : lastHour;
-        const hourDiff = currentHour - prevHour;
-        
-        if (hourDiff === 3) {
-          continuousForecasts.push(item);
-          lastHour = item.hour;
-        }
-      }
-    }
-  }
-  
-  filteredAndSorted = continuousForecasts;
+  console.log(`[WeatherService] Filtered forecast items: ${filteredAndSorted.length}`);
   
   // 첫 번째 항목을 "지금"으로 설정 (이미 가장 가까운 시간이므로)
   if (filteredAndSorted.length > 0) {
