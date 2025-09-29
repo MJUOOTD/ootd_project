@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'providers/home_providers.dart';
@@ -43,8 +44,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFE3F2FD), // 연한 하늘색으로 고정
         elevation: 0,
+        scrolledUnderElevation: 0, // 스크롤 시 그림자 제거
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Color(0xFFE3F2FD), // 상태바도 같은 색으로
+          statusBarIconBrightness: Brightness.dark,
+        ),
         actions: [
           Stack(
             children: [

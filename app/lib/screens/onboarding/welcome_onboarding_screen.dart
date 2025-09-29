@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/onboarding_service.dart';
+import '../../theme/app_theme.dart';
 import '../main_navigation.dart';
 
 class WelcomeOnboardingScreen extends StatefulWidget {
@@ -112,12 +113,12 @@ class _WelcomeOnboardingScreenState extends State<WelcomeOnboardingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFF7F9FE),
+              AppTheme.backgroundColor, // 하늘색 연한 버전
               Colors.white,
             ],
           ),
@@ -149,24 +150,24 @@ class _WelcomeOnboardingScreenState extends State<WelcomeOnboardingScreen>
                       const SizedBox(height: 16),
                       
                       // 앱명 타이틀
-                      const Text(
+                      Text(
                         'OOTD',
                         style: TextStyle(
                           fontSize: 44,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1B1D29),
+                          color: AppTheme.skyDark, // 하늘색 진한 버전
                         ),
                       ),
                       
                       const SizedBox(height: 28),
                       
                       // 서브타이틀
-                      const Text(
+                      Text(
                         '날씨 맞춤 스타일 추천',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF1B1D29),
+                          color: AppTheme.skyDark, // 하늘색 진한 버전
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -237,19 +238,19 @@ class _WelcomeOnboardingScreenState extends State<WelcomeOnboardingScreen>
         'icon': Icons.cloud_outlined,
         'title': '실시간 날씨 기반',
         'body': '현재 날씨에 맞는 코디 추천',
-        'bgColor': const Color(0xFFE8F0FF),
+        'bgColor': AppTheme.skyLight, // 하늘색 연한 버전
       },
       {
         'icon': Icons.thermostat_outlined,
         'title': '개인 체온 맞춤',
         'body': '당신만의 온도 감각에 맞춘 추천',
-        'bgColor': const Color(0xFFF5E8FF),
+        'bgColor': AppTheme.skyMedium, // 하늘색 중간 버전
       },
       {
         'icon': Icons.person_outline,
         'title': '상황별 추천',
         'body': '출근, 데이트, 운동별 맞춤 스타일',
-        'bgColor': const Color(0xFFE9FFE8),
+        'bgColor': AppTheme.skyLight, // 하늘색 연한 버전
       },
     ];
 
@@ -286,7 +287,7 @@ class _WelcomeOnboardingScreenState extends State<WelcomeOnboardingScreen>
                 child: Icon(
                   feature['icon'],
                   size: 28,
-                  color: const Color(0xFF5B6CFF),
+                  color: AppTheme.primaryColor, // 메인 하늘색
                 ),
               ),
               
@@ -300,19 +301,19 @@ class _WelcomeOnboardingScreenState extends State<WelcomeOnboardingScreen>
                   children: [
                     Text(
                       feature['title'],
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1B1D29),
+                        color: AppTheme.skyDark, // 하늘색 진한 버전
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       feature['body'],
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.normal,
-                        color: Color(0xFF6B7280),
+                        color: AppTheme.skyDark.withOpacity(0.7), // 하늘색 진한 버전의 투명도
                         height: 1.3,
                       ),
                     ),
@@ -342,25 +343,27 @@ class AppIconCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'OOTD 앱 아이콘',
+      label: 'OOTD 앱 로고',
       child: Container(
         width: 128,
         height: 128,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(28),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF5B6CFF),
-              Color(0xFF7C3AED),
-            ],
-          ),
-        ),
-        child: const Icon(
-          Icons.style_outlined,
-          size: 64,
           color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.sub20,
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Image.asset(
+            'assets/images/logo.png',
+            fit: BoxFit.contain,
+          ),
         ),
       ),
     );
@@ -398,12 +401,12 @@ class PrimaryCTA extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
                 colors: [
-                  Color(0xFF5B6CFF),
-                  Color(0xFF7C3AED),
+                  AppTheme.primaryColor, // 메인 하늘색
+                  AppTheme.skyDark, // 하늘색 진한 버전
                 ],
               ),
             ),
@@ -437,9 +440,9 @@ class FooterNote extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
-        color: Color(0xFF6B7280),
+        color: AppTheme.skyDark.withOpacity(0.6), // 하늘색 진한 버전의 투명도
         height: 1.3,
       ),
       textAlign: TextAlign.center,

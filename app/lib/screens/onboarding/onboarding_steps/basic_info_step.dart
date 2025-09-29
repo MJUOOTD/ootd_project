@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/app_theme.dart';
 
 class BasicInfoStep extends StatefulWidget {
   final String name;
@@ -61,22 +62,22 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
           const SizedBox(height: 20),
           
           // Title
-          const Text(
+          Text(
             'Let\'s get to know you',
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: AppTheme.skyDark, // 하늘색 진한 버전
             ),
           ),
           
           const SizedBox(height: 8),
           
-          const Text(
+          Text(
             'Tell us a bit about yourself to personalize your experience',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.white70,
+              color: AppTheme.skyDark.withOpacity(0.7), // 하늘색 진한 버전의 투명도
             ),
           ),
           
@@ -86,23 +87,25 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
           TextField(
             controller: _nameController,
             onChanged: (value) => _updateData(),
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: AppTheme.skyDark),
             decoration: InputDecoration(
               labelText: 'Full Name',
-              labelStyle: const TextStyle(color: Colors.white70),
+              labelStyle: TextStyle(color: AppTheme.skyDark.withOpacity(0.7)),
               hintText: 'Enter your full name',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+              hintStyle: TextStyle(color: AppTheme.skyDark.withOpacity(0.5)),
+              filled: true,
+              fillColor: const Color(0xFFFEFFFE), // #fefffe 색상 적용
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                borderSide: BorderSide(color: AppTheme.sub20),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                borderSide: BorderSide(color: AppTheme.sub20),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.white),
+                borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
               ),
             ),
           ),
@@ -114,23 +117,25 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
             controller: _emailController,
             onChanged: (value) => _updateData(),
             keyboardType: TextInputType.emailAddress,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: AppTheme.skyDark),
             decoration: InputDecoration(
               labelText: 'Email',
-              labelStyle: const TextStyle(color: Colors.white70),
+              labelStyle: TextStyle(color: AppTheme.skyDark.withOpacity(0.7)),
               hintText: 'Enter your email address',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+              hintStyle: TextStyle(color: AppTheme.skyDark.withOpacity(0.5)),
+              filled: true,
+              fillColor: const Color(0xFFFEFFFE), // #fefffe 색상 적용
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                borderSide: BorderSide(color: AppTheme.sub20),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                borderSide: BorderSide(color: AppTheme.sub20),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.white),
+                borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
               ),
             ),
           ),
@@ -138,12 +143,12 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
           const SizedBox(height: 24),
           
           // Gender Selection
-          const Text(
+          Text(
             'Gender',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: AppTheme.skyDark,
             ),
           ),
           
@@ -164,12 +169,12 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
           const SizedBox(height: 24),
           
           // Age Selection
-          const Text(
+          Text(
             'Age',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: AppTheme.skyDark,
             ),
           ),
           
@@ -181,7 +186,8 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white.withOpacity(0.3)),
+                    color: const Color(0xFFFEFFFE), // #fefffe 색상 적용
+                    border: Border.all(color: AppTheme.sub20),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -189,7 +195,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                     children: [
                       Text(
                         '$_selectedAge years',
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: AppTheme.skyDark),
                       ),
                       Column(
                         mainAxisSize: MainAxisSize.min,
@@ -203,9 +209,9 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                                 }
                               });
                             },
-                            child: const Icon(
+                            child: Icon(
                               Icons.keyboard_arrow_up,
-                              color: Colors.white,
+                              color: AppTheme.primaryColor,
                             ),
                           ),
                           GestureDetector(
@@ -217,9 +223,9 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                                 }
                               });
                             },
-                            child: const Icon(
+                            child: Icon(
                               Icons.keyboard_arrow_down,
-                              color: Colors.white,
+                              color: AppTheme.primaryColor,
                             ),
                           ),
                         ],
@@ -237,23 +243,23 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: const Color(0xFFFEFFFE), // #fefffe 색상 적용
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
+              border: Border.all(color: AppTheme.sub20),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.info_outline,
-                  color: Colors.white70,
+                  color: AppTheme.primaryColor,
                   size: 20,
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'This information helps us provide personalized outfit recommendations',
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: AppTheme.skyDark, // 더 진한 색상으로 변경
                       fontSize: 14,
                     ),
                   ),
@@ -279,24 +285,25 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
+          color: isSelected ? AppTheme.primaryColor : const Color(0xFFFEFFFE), // #fefffe 색상 적용
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.3),
+            color: isSelected ? AppTheme.primaryColor : AppTheme.sub20,
+            width: isSelected ? 2 : 1,
           ),
         ),
         child: Column(
           children: [
             Icon(
               icon,
-              color: isSelected ? const Color(0xFF030213) : Colors.white,
+              color: isSelected ? Colors.white : AppTheme.primaryColor,
               size: 32,
             ),
             const SizedBox(height: 8),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? const Color(0xFF030213) : Colors.white,
+                color: isSelected ? Colors.white : AppTheme.skyDark,
                 fontWeight: FontWeight.w600,
               ),
             ),

@@ -2,30 +2,35 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // Color definitions based on 색상명세서.md
-  // 메인 색상 (Primary): #4FC3F7 - 밝고 경쾌한 하늘색
-  static const Color primaryColor = Color(0xFF4FC3F7);
-  static const Color backgroundColor = Color(0xFFFFFFFF);
-  static const Color mutedColor = Color(0xFFECECF0);
-  static const Color accentColor = Color(0xFFE9EBEF);
+  // 메인 색상 (Primary): #2196F3 - 선명하고 생동감 있는 하늘색
+  static const Color primaryColor = Color(0xFF2196F3);
+  static const Color backgroundColor = Color(0xFFE3F2FD); // 하늘색 연한 버전으로 배경 변경
+  static const Color mutedColor = Color(0xFF90CAF9); // 하늘색 중간 버전
+  static const Color accentColor = Color(0xFFE3F2FD); // 하늘색 연한 버전
   static const Color destructiveColor = Color(0xFFD4183D);
   
   // 서브 색상 (Sub) - 투명도 변형들
-  static const Color sub100 = Color(0xFF4FC3F7); // rgba(79, 195, 247, 1.0) - CTA 버튼, 메인 강조
-  static const Color sub80 = Color(0xCC4FC3F7);  // rgba(79, 195, 247, 0.8) - 카드 배경, Hover 효과
-  static const Color sub60 = Color(0x994FC3F7);  // rgba(79, 195, 247, 0.6) - 보조 아이콘, 서브 텍스트 강조
-  static const Color sub40 = Color(0x664FC3F7);  // rgba(79, 195, 247, 0.4) - 구분선, 그래프 영역
-  static const Color sub20 = Color(0x334FC3F7);  // rgba(79, 195, 247, 0.2) - 하이라이트 배경, 섀도우 블러
-  static const Color sub10 = Color(0x1A4FC3F7);  // rgba(79, 195, 247, 0.1) - 선택 영역, 약한 강조 오버레이
+  static const Color sub100 = Color(0xFF2196F3); // rgba(33, 150, 243, 1.0) - CTA 버튼, 메인 강조, 앱바
+  static const Color sub80 = Color(0xCC2196F3);  // rgba(33, 150, 243, 0.8) - 카드 배경, Hover 효과
+  static const Color sub60 = Color(0x992196F3);  // rgba(33, 150, 243, 0.6) - 보조 아이콘, 서브 텍스트 강조
+  static const Color sub40 = Color(0x662196F3);  // rgba(33, 150, 243, 0.4) - 구분선, 그래프 영역
+  static const Color sub20 = Color(0x332196F3);  // rgba(33, 150, 243, 0.2) - 하이라이트 배경, 섀도우 블러
+  static const Color sub10 = Color(0x1A2196F3);  // rgba(33, 150, 243, 0.1) - 선택 영역, 약한 강조 오버레이
+  
+  // 보조 색상 (Secondary)
+  static const Color skyLight = Color(0xFFE3F2FD); // 하늘색 연한 버전 - 배경, 카드 내부
+  static const Color skyMedium = Color(0xFF90CAF9); // 하늘색 중간 버전 - 보조 버튼, 아이콘
+  static const Color skyDark = Color(0xFF1976D2); // 하늘색 진한 버전 - 강조 텍스트, 링크
   
   // Secondary color - 서브 색상의 연한 버전
-  static const Color secondaryColor = Color(0x1A4FC3F7); // sub10과 동일
+  static const Color secondaryColor = Color(0xFFE3F2FD); // 하늘색 연한 버전
   
   // Dark theme colors - 다크 모드에서도 메인 색상 유지하되 배경은 어둡게
   static const Color darkBackgroundColor = Color(0xFF121212);
   static const Color darkSurfaceColor = Color(0xFF1E1E1E);
   static const Color darkMutedColor = Color(0xFF2A2A2A);
   static const Color darkAccentColor = Color(0xFF3A3A3A);
-  static const Color darkSecondaryColor = Color(0x1A4FC3F7); // 다크 모드에서도 서브 색상 사용
+  static const Color darkSecondaryColor = Color(0x1A2196F3); // 다크 모드에서도 새로운 서브 색상 사용
 
   // Border radius constant
   static const double borderRadius = 10.0;
@@ -51,7 +56,7 @@ class AppTheme {
       ),
       textTheme: _buildTextTheme(Brightness.light),
       appBarTheme: const AppBarTheme(
-        backgroundColor: backgroundColor,
+        // backgroundColor 제거 - 각 화면에서 개별 설정
         foregroundColor: sub100,
         elevation: 0,
         centerTitle: true,
@@ -64,11 +69,12 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: backgroundColor,
       cardTheme: CardThemeData(
-        color: backgroundColor,
-        elevation: 2,
+        color: Colors.white, // 카드는 흰색으로 하되
+        elevation: 4, // 더 강한 그림자로 하늘색 느낌 강조
         shadowColor: sub20, // 서브 색상의 섀도우 사용
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius),
+          side: BorderSide(color: sub20, width: 1), // 하늘색 테두리 추가
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -112,18 +118,18 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: sub10, // 서브 색상의 연한 버전 사용
+        fillColor: skyLight, // 하늘색 연한 버전 사용
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: sub20, width: 1), // 하늘색 테두리
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: sub20, width: 1), // 하늘색 테두리
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius),
-          borderSide: const BorderSide(color: sub100, width: 2),
+          borderSide: const BorderSide(color: sub100, width: 3), // 더 두꺼운 하늘색 테두리
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadius),
@@ -139,16 +145,17 @@ class AppTheme {
         elevation: 8,
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: accentColor,
-        selectedColor: sub100,
+        backgroundColor: skyLight, // 하늘색 연한 버전 배경
+        selectedColor: sub100, // 선택 시 하늘색
         labelStyle: const TextStyle(
           color: sub100,
           fontSize: 14,
-          fontWeight: FontWeight.w400,
+          fontWeight: FontWeight.w500, // 더 굵게
           height: 1.5,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius),
+          side: BorderSide(color: sub20, width: 1), // 하늘색 테두리
         ),
       ),
       dividerTheme: const DividerThemeData(

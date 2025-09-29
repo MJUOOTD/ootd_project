@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/user_provider.dart';
 import '../../models/user_model.dart';
 import '../../screens/main_navigation.dart';
+import '../../theme/app_theme.dart';
 import 'onboarding_steps/basic_info_step.dart';
 import 'onboarding_steps/body_info_step.dart';
 import 'onboarding_steps/temperature_sensitivity_step.dart';
@@ -144,7 +145,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF030213),
+      backgroundColor: AppTheme.backgroundColor, // 하늘색 배경
       body: SafeArea(
         child: Column(
           children: [
@@ -158,16 +159,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     children: [
                       Text(
                         'Step ${_currentStep + 1} of $_totalSteps',
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: AppTheme.skyDark, // 하늘색 진한 버전
                           fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       Text(
                         '${((_currentStep + 1) / _totalSteps * 100).round()}%',
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: AppTheme.skyDark, // 하늘색 진한 버전
                           fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -175,8 +178,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   const SizedBox(height: 12),
                   LinearProgressIndicator(
                     value: (_currentStep + 1) / _totalSteps,
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                    backgroundColor: AppTheme.sub20, // 하늘색 연한 버전
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor), // 메인 하늘색
                   ),
                 ],
               ),
@@ -207,11 +210,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   if (_currentStep > 0)
                     TextButton(
                       onPressed: _previousStep,
-                      child: const Text(
+                      child: Text(
                         'Back',
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: AppTheme.skyDark, // 하늘색 진한 버전
                           fontSize: 16,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     )
@@ -221,12 +225,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ElevatedButton(
                     onPressed: _isStepValid() ? _nextStep : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF030213),
+                      backgroundColor: AppTheme.primaryColor, // 메인 하늘색
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      elevation: 4,
+                      shadowColor: AppTheme.sub20, // 하늘색 그림자
                     ),
                     child: Text(
                       _currentStep == _totalSteps - 1 ? 'Complete' : 'Next',
