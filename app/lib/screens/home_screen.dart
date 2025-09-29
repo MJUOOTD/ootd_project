@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/weather_provider.dart';
 import '../providers/user_provider.dart';
 import '../providers/recommendation_provider.dart';
@@ -108,10 +109,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.shopping_cart_outlined, color: Color(0xFF030213)),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CartScreen()),
-              );
+              _handleCartAccess();
             },
           ),
           PopupMenuButton<String>(
@@ -325,6 +323,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _handleCartAccess() {
+    final userState = ref.read(userProvider);
+    
+    if (userState.isLoggedIn) {
+      // 로그인 상태: 카트 화면으로 이동
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const CartScreen()),
+      );
+    } else {
+      // 비로그인 상태: 로그인 다이얼로그 표시
+      _showLoginDialog();
+    }
+  }
+
+  void _showLoginDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.shopping_cart_outlined, color: Color(0xFF4A90E2)),
+            SizedBox(width: 8),
+            Text('장바구니 이용'),
+          ],
+        ),
+        content: const Text(
+          '장바구니를 이용하려면 로그인이 필요합니다.\n로그인하시겠습니까?',
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              '취소',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.pushNamed('login');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4A90E2),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('로그인'),
+          ),
+        ],
       ),
     );
   }
