@@ -1,3 +1,5 @@
+import 'user_model.dart';
+
 /// 사용자 온도 설정 모델
 class TemperatureSettings {
   final double temperatureSensitivity; // 0.7 ~ 1.3
@@ -62,6 +64,21 @@ class TemperatureSettings {
     );
   }
 
+  /// UserModel에서 TemperatureSettings 생성
+  factory TemperatureSettings.fromUser(UserModel user) {
+    final now = DateTime.now();
+    return TemperatureSettings(
+      temperatureSensitivity: _convertTemperatureSensitivity(user.temperatureSensitivity),
+      coldTolerance: _convertActivityLevelToTolerance(user.activityLevel, 'cold'),
+      heatTolerance: _convertActivityLevelToTolerance(user.activityLevel, 'heat'),
+      age: user.age,
+      gender: _convertGender(user.gender),
+      activityLevel: _convertActivityLevel(user.activityLevel),
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
   /// DateTime 파싱 헬퍼 메서드
   static DateTime _parseDateTime(dynamic dateValue) {
     if (dateValue == null) return DateTime.now();
@@ -106,6 +123,67 @@ class TemperatureSettings {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
+  }
+
+  /// TemperatureSensitivity enum을 temperatureSensitivity double로 변환
+  static double _convertTemperatureSensitivity(TemperatureSensitivity sensitivity) {
+    switch (sensitivity) {
+      case TemperatureSensitivity.veryCold:
+        return 0.7;
+      case TemperatureSensitivity.cold:
+        return 0.85;
+      case TemperatureSensitivity.normal:
+        return 1.0;
+      case TemperatureSensitivity.hot:
+        return 1.15;
+      case TemperatureSensitivity.veryHot:
+        return 1.3;
+    }
+  }
+
+  /// 활동량을 추위/더위 감수성으로 변환
+  static String _convertActivityLevelToTolerance(String activityLevel, String type) {
+    switch (activityLevel) {
+      case '낮음':
+      case 'low':
+        return 'low'; // 활동량이 낮으면 추위/더위에 민감
+      case '보통':
+      case 'moderate':
+        return 'normal';
+      case '높음':
+      case 'high':
+        return 'high'; // 활동량이 높으면 추위/더위에 강함
+      default:
+        return 'normal';
+    }
+  }
+
+  /// 성별을 TemperatureSettings 형식으로 변환
+  static String? _convertGender(String gender) {
+    switch (gender) {
+      case '남성':
+        return 'male';
+      case '여성':
+        return 'female';
+      case '기타':
+        return 'other';
+      default:
+        return null;
+    }
+  }
+
+  /// 활동량을 TemperatureSettings 형식으로 변환
+  static String _convertActivityLevel(String activityLevel) {
+    switch (activityLevel) {
+      case '낮음':
+        return 'low';
+      case '보통':
+        return 'moderate';
+      case '높음':
+        return 'high';
+      default:
+        return 'moderate';
+    }
   }
 
   /// 설정 복사 (일부 필드만 변경)

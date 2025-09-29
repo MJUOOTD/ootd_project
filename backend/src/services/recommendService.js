@@ -37,7 +37,7 @@ function generateAlternatives(main) {
 export async function getRecommendation({ userId, lat, lon, situation }) {
   const profile = getUserProfile(userId);
   if (!profile) throw new Error('User profile not found');
-  const weather = await getCurrentWeather(lat, lon);
+  const weather = await getCurrentWeather(lat, lon, { userId });
 
   const sensitivity = getSensitivityCoeff(profile);
   const personalFeel = computePersonalizedFeel(

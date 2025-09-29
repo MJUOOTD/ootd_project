@@ -250,11 +250,6 @@ npm run dev
 - JavaScript: ESLint 규칙 준수
 - 커밋 메시지: Conventional Commits 형식 사용
 
-### 브랜치 전략
-- `main`: 프로덕션 브랜치
-- `develop`: 개발 브랜치
-- `feature/*`: 기능 개발 브랜치
-- `hotfix/*`: 긴급 수정 브랜치
 
 ### 테스트
 ```bash
@@ -262,22 +257,11 @@ npm run dev
 cd app
 flutter test
 
-# 백엔드 테스트 (추후 구현 예정)
+# 백엔드 테스트 
 cd backend
 npm test
 ```
 
-## 🤝 기여하기
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 라이선스
-
-이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 `LICENSE` 파일을 참조하세요.
 
 ## 📞 문의
 
@@ -285,4 +269,4 @@ npm test
 
 ---
 
-**OOTD Team** - 명지대학교 소프트웨어학과
+**OOTD Team**

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getCurrentWeather } from '../services/weatherService.js';
+import { firebaseAuth } from '../middleware/firebaseAuth.js';
 
 const router = Router();
 
@@ -14,7 +15,26 @@ router.get('/current', async (req, res, next) => {
     if (Number.isNaN(lat) || Number.isNaN(lon)) {
       return res.status(400).json({ error: 'lat and lon are required numbers' });
     }
-    const data = await getCurrentWeather(lat, lon, { nx, ny, force });
+    
+    // 선택적 인증: Authorization 헤더가 있으면 인증 시도
+    let userId = null;
+    if (req.headers.authorization) {
+      try {
+        // Firebase 인증 미들웨어를 수동으로 호출
+        await new Promise((resolve, reject) => {
+          firebaseAuth(req, res, (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        userId = req.userId || null;
+      } catch (authError) {
+        // 인증 실패시 무시하고 기본 날씨만 제공
+        console.warn('Authentication failed, providing basic weather data:', authError.message);
+      }
+    }
+    
+    const data = await getCurrentWeather(lat, lon, { nx, ny, force, userId });
     res.json(data);
   } catch (err) {
     next(err);

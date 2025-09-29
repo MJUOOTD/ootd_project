@@ -90,26 +90,23 @@ try {
 
 ## Migration from Legacy Services
 
-The existing `weather_service.dart` is marked as deprecated and contains TODO comments for migration to the new interface-based architecture.
+The legacy `weather_service.dart` has been removed. The new interface-based architecture is now the standard approach.
 
 ### Migration Steps
 
-1. **Replace direct service calls**:
+1. **Use service locator for service access**:
    ```dart
-   // Old way
-   final weather = await WeatherService.getCurrentWeather();
-   
-   // New way
+   // Get weather service through service locator
    final weather = await serviceLocator.weatherService.getCurrentWeather();
    ```
 
 2. **Update error handling**:
    ```dart
-   // Old way
+   // New way with proper error types
    try {
-     final weather = await WeatherService.getCurrentWeather();
+     final weather = await serviceLocator.weatherService.getCurrentWeather();
    } catch (e) {
-     // Generic error handling
+     // Specific error handling with WeatherException
    }
    
    // New way

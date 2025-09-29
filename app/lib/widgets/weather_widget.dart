@@ -71,16 +71,15 @@ class WeatherWidget extends ConsumerWidget {
                       color: Color(0xFF2C3E50),
                     ),
                   ),
-                  // 체감온도 표시 (기온과 다를 때만)
-                  if ((w.feelsLike - w.temperature).abs() > 0.5)
-                    Text(
-                      '체감 ${w.feelsLike.round()}°C',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
+                  // 체감온도 표시 (항상 표시)
+                  Text(
+                    '체감 ${w.feelsLike.round()}°C',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
                     ),
+                  ),
                 ],
               ),
             ],

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import '../services/simple_auth_service.dart';
+import '../services/service_locator.dart';
 
 class UserState {
   final UserModel? currentUser;
@@ -104,6 +105,20 @@ class UserProvider extends StateNotifier<UserState> {
               updatedAt: firebaseUser.metadata.lastSignInTime ?? DateTime.now(),
             );
           }
+          
+          // 기존 사용자의 TemperatureSettings 초기화 확인
+          try {
+            final temperatureSettingsInitializer = serviceLocator.temperatureSettingsInitializer;
+            final hasExistingSettings = await temperatureSettingsInitializer.hasExistingSettings(firebaseUser.uid);
+            
+            if (!hasExistingSettings) {
+              // TemperatureSettings가 없으면 기본값으로 초기화
+              await temperatureSettingsInitializer.initializeFromUser(currentUser, firebaseUser.uid);
+              print('[UserProvider] Initialized default TemperatureSettings for existing user: ${firebaseUser.uid}');
+            }
+          } catch (e) {
+            print('[UserProvider] Failed to initialize TemperatureSettings for existing user: $e');
+          }
         } else {
           // No user data in SharedPreferences, create basic user model
           currentUser = UserModel(
@@ -184,6 +199,17 @@ class UserProvider extends StateNotifier<UserState> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isFirstTime', false);
       await prefs.setString('userData', user.toJson().toString());
+      
+      // Firebase Auth에서 현재 사용자 ID 가져오기
+      final currentUser = fb.FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        // TemperatureSettings 초기화
+        final temperatureSettingsInitializer = serviceLocator.temperatureSettingsInitializer;
+        await temperatureSettingsInitializer.initializeFromUser(user, currentUser.uid);
+        print('[UserProvider] TemperatureSettings initialized for user: ${currentUser.uid}');
+      } else {
+        print('[UserProvider] No Firebase user found, skipping TemperatureSettings initialization');
+      }
       
       state = state.copyWith(
         currentUser: user,

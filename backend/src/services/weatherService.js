@@ -1,4 +1,5 @@
 import { cacheGet, cacheSet } from './cache.js';
+import { TemperatureSettingsService } from './temperatureSettingsService.js';
 
 /**
  * 기상청 표준 체감온도 계산 공식
@@ -47,6 +48,8 @@ export async function getCurrentWeather(lat, lon, opts = {}) {
   if (typeof lat !== 'number' || typeof lon !== 'number') {
     throw new Error('lat/lon must be numbers');
   }
+  
+  const { userId } = opts; // 사용자 ID 옵션 추가
   let nx = typeof opts.nx === 'number' ? opts.nx : undefined;
   let ny = typeof opts.ny === 'number' ? opts.ny : undefined;
   if (!nx || !ny) {
@@ -68,7 +71,7 @@ export async function getCurrentWeather(lat, lon, opts = {}) {
   const kmaKey = encodeURIComponent(kmaKeyRaw);
 
   try {
-    const normalized = await fetchKmaUltraNow(kmaKey, nx, ny, lat, lon);
+    const normalized = await fetchKmaUltraNow(kmaKey, nx, ny, lat, lon, userId);
     // Reverse geocoding으로 도시/국가 정보 보강 (best-effort)
     try {
       const place = await reverseGeocode(lat, lon);
@@ -89,12 +92,12 @@ export async function getCurrentWeather(lat, lon, opts = {}) {
     if (cached) {
       return { ...cached, cached: true, source: cached.source ?? 'cache' };
     }
-    return await buildFallback(lat, lon);
+    return await buildFallback(lat, lon, userId);
   }
 }
 
 // KMA 초단기실황(getUltraSrtNcst) 호출 → 표준화
-async function fetchKmaUltraNow(serviceKey, nx, ny, lat, lon) {
+async function fetchKmaUltraNow(serviceKey, nx, ny, lat, lon, userId = null) {
   const { baseDate, baseTime } = computeKmaBase();
   const params = new URLSearchParams({
     serviceKey: decodeURIComponent(serviceKey),
@@ -144,7 +147,24 @@ async function fetchKmaUltraNow(serviceKey, nx, ny, lat, lon) {
 
   const condition = skyToCondition(sky);
   // 기상청 표준 체감온도 계산 공식 적용
-  const feelsLike = calculateKMAFeelsLike(temperature, humidity, windSpeed);
+  const baseFeelsLike = calculateKMAFeelsLike(temperature, humidity, windSpeed);
+  
+  // 개인화된 체감온도 계산 (사용자 ID가 있는 경우)
+  let feelsLike = baseFeelsLike;
+  if (userId) {
+    try {
+      const weatherData = {
+        temperature,
+        humidity,
+        windSpeed,
+        feelsLike: baseFeelsLike
+      };
+      feelsLike = await TemperatureSettingsService.calculatePersonalizedFeelsLike(userId, weatherData);
+    } catch (error) {
+      // 개인화 계산 실패시 기본 체감온도 사용
+      console.warn('Failed to calculate personalized feels like:', error.message);
+    }
+  }
   
   const timestamp = items[0]?.baseDate && items[0]?.baseTime
     ? kmaToIso(items[0].baseDate, items[0].baseTime)
@@ -231,7 +251,7 @@ async function reverseGeocode(lat, lon) {
   return { city, country, district, subLocality };
 }
 
-async function buildFallback(lat, lon) {
+async function buildFallback(lat, lon, userId = null) {
   const nowIso = new Date().toISOString();
   
   // Try to get location info from reverse geocoding
@@ -256,10 +276,31 @@ async function buildFallback(lat, lon) {
     // reverse geocoding 실패는 무시
   }
   
+  // 기본 체감온도 계산
+  const baseTemperature = 22;
+  const baseFeelsLike = calculateKMAFeelsLike(baseTemperature, 60, 0);
+  
+  // 개인화된 체감온도 계산 (사용자 ID가 있는 경우)
+  let feelsLike = baseFeelsLike;
+  if (userId) {
+    try {
+      const weatherData = {
+        temperature: baseTemperature,
+        humidity: 60,
+        windSpeed: 0,
+        feelsLike: baseFeelsLike
+      };
+      feelsLike = await TemperatureSettingsService.calculatePersonalizedFeelsLike(userId, weatherData);
+    } catch (error) {
+      // 개인화 계산 실패시 기본 체감온도 사용
+      console.warn('Failed to calculate personalized feels like in fallback:', error.message);
+    }
+  }
+  
   return {
     timestamp: nowIso,
-    temperature: 22,
-    feelsLike: 22,
+    temperature: baseTemperature,
+    feelsLike,
     humidity: 60,
     windSpeed: 2,
     windDirection: 0,

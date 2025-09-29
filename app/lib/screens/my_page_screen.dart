@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/user_provider.dart';
-import '../test_temperature_settings.dart';
 
 class MyPageScreen extends ConsumerStatefulWidget {
   const MyPageScreen({super.key});
@@ -345,13 +344,6 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
                         title: '설정',
                         onTap: () => _showComingSoon(context, '설정'),
                       ),
-                      _buildDivider(),
-                      _buildMenuItem(
-                        context,
-                        icon: Icons.science_outlined,
-                        title: '온도 설정 테스트',
-                        onTap: () => _navigateToTemperatureTest(context),
-                      ),
                 ],
               ),
             ),
@@ -481,14 +473,6 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
     );
   }
 
-  void _navigateToTemperatureTest(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const TemperatureSettingsTestScreen(),
-      ),
-    );
-  }
 
   void _showAppInfo(BuildContext context) {
     showDialog(
