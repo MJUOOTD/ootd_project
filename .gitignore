@@ -57,6 +57,7 @@ app.*.map.json
 # ===================================================================
 
 # Android
+
 /android/app/build/
 /android/build/
 /android/.gradle/
@@ -85,7 +86,7 @@ app.*.map.json
 # ===================================================================
 
 # 의존성/라이브러리 폴더 (필요시 주석 해제)
-# /node_modules
+/node_modules/
 # /vendor
 # /venv
 
@@ -94,3 +95,6 @@ app.*.map.json
 .env.local
 .env.*.local
 secrets.json
+
+# Android/Flutter build folder
+/app/build/
