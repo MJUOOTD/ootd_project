@@ -126,7 +126,7 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
           const SizedBox(height: 8),
           
         // 현재 위치 표시
-        _buildLocationRow(w, hasLocationPermissionError),
+        _buildLocationRow(w, hasLocationPermissionError, state.isManualSelection),
           
           
           // 에러 메시지 표시 (fallback 상황)
@@ -542,7 +542,7 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
     }
   }
 
-  Widget _buildLocationRow(WeatherModel weather, bool hasLocationPermissionError) {
+  Widget _buildLocationRow(WeatherModel weather, bool hasLocationPermissionError, bool isManualSelection) {
     print('[WeatherWidget] Location debug:');
     print('[WeatherWidget] - city: "${weather.location.city}"');
     print('[WeatherWidget] - country: "${weather.location.country}"');
@@ -560,13 +560,25 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
         const SizedBox(width: 4),
         Expanded(
           child: Text(
-            hasLocationPermissionError 
-                ? '현재 위치를 불러올 수 없음'
-                : (weather.location.formattedLocation.isNotEmpty && 
-                   weather.location.formattedLocation != '현재 위치' &&
-                   weather.location.formattedLocation != 'globe'
-                    ? weather.location.formattedLocation 
-                    : '위치 정보 없음'),
+            () {
+              if (hasLocationPermissionError) {
+                return '현재 위치를 불러올 수 없음';
+              }
+              // 검색으로 선택된 경우: "시 도 + 구/군" 형태
+              if (isManualSelection) {
+                final city = (weather.location.city).trim();
+                final district = (weather.location.district ?? '').trim();
+                if (city.isNotEmpty) {
+                  return district.isNotEmpty ? '$city $district' : city;
+                }
+              }
+              // 기존 현재 위치 표기는 기존 formattedLocation 로직 유지
+              final formatted = weather.location.formattedLocation;
+              if (formatted.isNotEmpty && formatted != '현재 위치' && formatted != 'globe') {
+                return formatted;
+              }
+              return '위치 정보 없음';
+            }(),
             style: TextStyle(
               color: Colors.grey[500],
               fontSize: 12,

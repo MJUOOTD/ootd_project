@@ -9,12 +9,20 @@ class WeatherState {
   final List<WeatherModel> forecast;
   final bool isLoading;
   final String? error;
+  final bool isManualSelection; // 사용자가 도시를 수동 선택했는지 여부
+  final double? selectedLatitude; // 수동 선택한 위도
+  final double? selectedLongitude; // 수동 선택한 경도
+  final WeatherModel? currentLocationCache; // 처음 위치 기반으로 받은 날씨 캐시
 
   WeatherState({
     this.currentWeather,
     this.forecast = const [],
     this.isLoading = false,
     this.error,
+    this.isManualSelection = false,
+    this.selectedLatitude,
+    this.selectedLongitude,
+    this.currentLocationCache,
   });
 
   bool get hasWeather => currentWeather != null;
@@ -38,12 +46,20 @@ class WeatherState {
     List<WeatherModel>? forecast,
     bool? isLoading,
     String? error,
+    bool? isManualSelection,
+    double? selectedLatitude,
+    double? selectedLongitude,
+    WeatherModel? currentLocationCache,
   }) {
     return WeatherState(
       currentWeather: currentWeather ?? this.currentWeather,
       forecast: forecast ?? this.forecast,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
+      isManualSelection: isManualSelection ?? this.isManualSelection,
+      selectedLatitude: selectedLatitude ?? this.selectedLatitude,
+      selectedLongitude: selectedLongitude ?? this.selectedLongitude,
+      currentLocationCache: currentLocationCache ?? this.currentLocationCache,
     );
   }
 }
@@ -54,7 +70,25 @@ class WeatherProvider extends StateNotifier<WeatherState> {
     FavoritesService.addListener(_onFavoritesChanged);
   }
 
+  // 도시 수동 선택 직후 자동 새로고침(현재 위치 재조회)로 덮어쓰는 것을 방지하기 위한 억제 타이머
+  DateTime? _suppressAutoRefreshUntil;
+  bool _didFetchLocationOnce = false; // 위치 서비스 1회만 호출
+
+  bool _isAutoRefreshSuppressed() {
+    if (_suppressAutoRefreshUntil == null) return false;
+    return DateTime.now().isBefore(_suppressAutoRefreshUntil!);
+  }
+
+  void _suppressAutoRefreshFor(Duration duration) {
+    _suppressAutoRefreshUntil = DateTime.now().add(duration);
+  }
+
   void _onFavoritesChanged() {
+    // 수동 도시 선택 직후에는 자동 새로고침을 건너뜀
+    if (_isAutoRefreshSuppressed()) {
+      print('[WeatherProvider] Auto-refresh suppressed due to manual selection. Skipping refresh.');
+      return;
+    }
     // 즐겨찾기가 변경되면 날씨 정보 새로고침
     fetchCurrentWeather();
   }
@@ -64,136 +98,81 @@ class WeatherProvider extends StateNotifier<WeatherState> {
     print('[WeatherProvider] Force refresh: $force');
     print('[WeatherProvider] Current state: isLoading=${state.isLoading}, hasWeather=${state.currentWeather != null}');
     
-    // 강제로 새로고침하도록 설정
-    force = true;
-    
+    // 1) 수동 선택 모드: 선택 좌표 기준으로 갱신 (위치 서비스 호출 안함)
+    if (state.isManualSelection && state.selectedLatitude != null && state.selectedLongitude != null) {
+      print('[WeatherProvider] Manual selection active. Skipping current-location refresh and using selected city.');
+      await getWeatherForLocation(state.selectedLatitude!, state.selectedLongitude!);
+      return;
+    }
+
+    // 2) 위치 서비스 호출 최소화: 첫 1회만 현재 위치를 사용, 이후에는 캐시 좌표로 갱신
     state = state.copyWith(isLoading: true, error: null);
 
-    try {
-      print('[WeatherProvider] Fetching current weather...');
-      
-      // 1. 현재 위치 기반 날씨 정보 시도 (최우선)
+    if (!_didFetchLocationOnce) {
+      print('[WeatherProvider] First-time location fetch. Using current location service.');
       try {
-        print('[WeatherProvider] ===== ATTEMPTING CURRENT LOCATION =====');
-        print('[WeatherProvider] Attempting to get current location weather...');
-        final weather = await serviceLocator.weatherService.getCurrentWeather(force: force);
-        print('[WeatherProvider] Successfully got weather from current location');
-        print('[WeatherProvider] Weather location: ${weather.location.city}, ${weather.location.country}');
-        print('[WeatherProvider] Weather coordinates: lat=${weather.location.latitude}, lon=${weather.location.longitude}');
-        print('[WeatherProvider] Weather source: ${weather.source}');
-        print('[WeatherProvider] Weather cached: ${weather.cached}');
-        
-        print('[WeatherProvider] Getting forecast data...');
+        final weather = await serviceLocator.weatherService.getCurrentWeather(force: true);
         final forecast = await serviceLocator.weatherService.getForecast();
-        print('[WeatherProvider] Successfully got forecast data');
-        
-        print('[WeatherProvider] Fetched weather data from current location: temperature=${weather.temperature}°C, condition=${weather.condition}');
-        print('[WeatherProvider] Weather location: lat=${weather.location.latitude}, lon=${weather.location.longitude}');
-        print('[WeatherProvider] Fetched forecast data: ${forecast.length} items');
-        
-        print('[WeatherProvider] Updating state with weather data...');
-        state = state.copyWith(currentWeather: weather, forecast: forecast, isLoading: false);
-        print('[WeatherProvider] ===== FETCH WEATHER SUCCESS =====');
-        return;
-      } catch (locationError) {
-        print('[WeatherProvider] ===== CURRENT LOCATION FAILED =====');
-        print('[WeatherProvider] Location error: $locationError');
-        print('[WeatherProvider] Error type: ${locationError.runtimeType}');
-        
-        // 위치 권한 오류인 경우에만 에러 상태로 설정
-        if (locationError is LocationException) {
-          print('[WeatherProvider] LocationException detected: ${locationError.message}');
-          print('[WeatherProvider] LocationException type: ${locationError.type}');
-          
-          // 권한 관련 오류인 경우에만 에러 상태로 설정
-          if (locationError.type == LocationErrorType.permissionDenied) {
-            print('[WeatherProvider] Permission denied error detected');
-            state = state.copyWith(
-              isLoading: false,
-              error: '현재 위치를 불러올 수 없음'
-            );
-            return;
-          } else if (locationError.type == LocationErrorType.serviceDisabled) {
-            print('[WeatherProvider] Location service disabled error detected');
-            state = state.copyWith(
-              isLoading: false,
-              error: '위치 서비스가 비활성화되어 있습니다'
-            );
-            return;
-          } else {
-            // 다른 위치 오류 (네트워크 오류 등)는 fallback 시도
-            print('[WeatherProvider] Non-permission location error, trying fallback...');
-          }
-        } else if (locationError.toString().contains('permission') || 
-                   locationError.toString().contains('Permission')) {
-          print('[WeatherProvider] Location permission error detected (string match)');
-          state = state.copyWith(
-            isLoading: false,
-            error: '현재 위치를 불러올 수 없음'
-          );
-          return;
-        } else {
-          // 기타 위치 오류는 fallback 시도
-          print('[WeatherProvider] Other location error, trying fallback...');
-        }
-        
-        // 2. 즐겨찾기 도시가 있는지 확인
-        final favorites = FavoritesService.favorites;
-        if (favorites.isNotEmpty) {
-          print('[WeatherProvider] Using favorite city: ${favorites.first.placeName}');
-          final favoriteWeather = await serviceLocator.weatherService.getWeatherForLocation(
-            favorites.first.latitude, 
-            favorites.first.longitude, 
-            force: force
-          );
-          final favoriteForecast = await serviceLocator.weatherService.getForecastForLocation(
-            favorites.first.latitude, 
-            favorites.first.longitude
-          );
-          print('[WeatherProvider] Fetched weather for favorite city: temperature=${favoriteWeather.temperature}°C, condition=${favoriteWeather.condition}');
-          state = state.copyWith(
-            currentWeather: favoriteWeather, 
-            forecast: favoriteForecast, 
-            isLoading: false,
-            error: null
-          );
-          return;
-        }
-        
-        // 3. 기본 위치 fallback 제거 - 에러 상태로 유지
-        print('[WeatherProvider] No fallback - location permission required');
+        _didFetchLocationOnce = true;
         state = state.copyWith(
+          currentWeather: weather,
+          forecast: forecast,
           isLoading: false,
-          error: '현재 위치를 불러올 수 없음'
+          error: null,
+          currentLocationCache: weather,
+          isManualSelection: false,
         );
+        print('[WeatherProvider] First location fetch success. Cached current location weather.');
+        return;
+      } catch (e) {
+        print('[WeatherProvider] First-time location fetch failed: $e');
+        state = state.copyWith(isLoading: false, error: '현재 위치를 불러올 수 없음');
+        return;
       }
+    }
+
+    // 3) 두 번째 이후: 현재 가진 좌표(현재 상태 또는 캐시)로만 갱신, 위치 서비스 호출 안함
+    final cached = state.currentWeather ?? state.currentLocationCache;
+    if (cached?.location != null) {
+      final lat = cached!.location.latitude;
+      final lon = cached.location.longitude;
+      print('[WeatherProvider] Refreshing by last known coordinates: lat=$lat, lon=$lon');
+      try {
+        final weather = await serviceLocator.weatherService.getWeatherForLocation(lat, lon, force: true);
+        final forecast = await serviceLocator.weatherService.getForecastForLocation(lat, lon);
+        state = state.copyWith(
+          currentWeather: weather,
+          forecast: forecast,
+          isLoading: false,
+          error: null,
+          // 유지: 수동 선택 아님
+          isManualSelection: false,
+        );
+        return;
+      } catch (e) {
+        print('[WeatherProvider] Refresh by last known coordinates failed: $e');
+        state = state.copyWith(isLoading: false, error: '날씨 정보를 갱신할 수 없습니다');
+        return;
+      }
+    }
+
+    // 좌표가 전혀 없으면 첫 위치 호출 시나리오로 대체
+    print('[WeatherProvider] No known coordinates, falling back to initial location fetch');
+    try {
+      final weather = await serviceLocator.weatherService.getCurrentWeather(force: true);
+      final forecast = await serviceLocator.weatherService.getForecast();
+      _didFetchLocationOnce = true;
+      state = state.copyWith(
+        currentWeather: weather,
+        forecast: forecast,
+        isLoading: false,
+        error: null,
+        currentLocationCache: weather,
+        isManualSelection: false,
+      );
     } catch (e) {
-      print('[WeatherProvider] Error fetching weather: $e');
-      
-      // 위치 권한 오류인 경우 에러 상태로 설정 (fallback 제거)
-      if (e is LocationException) {
-        print('[WeatherProvider] LocationException detected: ${e.message}');
-        state = state.copyWith(
-          isLoading: false,
-          error: '현재 위치를 불러올 수 없음'
-        );
-        return;
-      } else if (e.toString().contains('permission') || 
-                 e.toString().contains('Permission') ||
-                 e.toString().contains('LocationException')) {
-        print('[WeatherProvider] Location permission error detected');
-        state = state.copyWith(
-          isLoading: false,
-          error: '현재 위치를 불러올 수 없음'
-        );
-        return;
-      }
-      
-      String errorMessage = '날씨 정보를 가져올 수 없습니다. 도시 검색을 통해 원하는 지역의 날씨를 확인하세요.';
-      if (e.toString().contains('network')) {
-        errorMessage = '네트워크 연결을 확인해주세요.';
-      }
-      state = state.copyWith(error: errorMessage, isLoading: false);
+      print('[WeatherProvider] Initial fallback location fetch failed: $e');
+      state = state.copyWith(isLoading: false, error: '현재 위치를 불러올 수 없음');
     }
   }
 
@@ -214,18 +193,50 @@ class WeatherProvider extends StateNotifier<WeatherState> {
   }
 
   Future<WeatherModel> getWeatherForLocation(double lat, double lon) async {
-    state = state.copyWith(isLoading: true, error: null);
+    print('[WeatherProvider] ===== GET WEATHER FOR LOCATION START =====');
+    print('[WeatherProvider] Coordinates: lat=$lat, lon=$lon');
+    
+    // 수동 선택 중/직후 자동 새로고침 억제 (즐겨찾기 이벤트 등으로 인한 덮어쓰기 방지)
+    _suppressAutoRefreshFor(const Duration(seconds: 5));
+
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      isManualSelection: true,
+      selectedLatitude: lat,
+      selectedLongitude: lon,
+    );
+    print('[WeatherProvider] State updated: isLoading=true');
 
     try {
-      final weather = await serviceLocator.weatherService.getWeatherForLocation(lat, lon);
+      print('[WeatherProvider] Fetching current weather for location...');
+      final weather = await serviceLocator.weatherService.getWeatherForLocation(lat, lon, force: true);
+      print('[WeatherProvider] Current weather fetched: temperature=${weather.temperature}°C, condition=${weather.condition}');
+      print('[WeatherProvider] Weather location: ${weather.location.city}, ${weather.location.country}');
+      
+      print('[WeatherProvider] Fetching forecast for location...');
       final forecast = await serviceLocator.weatherService.getForecastForLocation(lat, lon);
-      print('[WeatherProvider] Fetched weather for selected location: temperature=${weather.temperature}°C, condition=${weather.condition}');
-      print('[WeatherProvider] Location: lat=$lat, lon=$lon');
-      state = state.copyWith(currentWeather: weather, forecast: forecast, isLoading: false, error: null);
+      print('[WeatherProvider] Forecast fetched: ${forecast.length} items');
+      
+      print('[WeatherProvider] Updating state with new weather data...');
+      state = state.copyWith(
+        currentWeather: weather,
+        forecast: forecast,
+        isLoading: false,
+        error: null,
+        isManualSelection: true,
+        selectedLatitude: lat,
+        selectedLongitude: lon,
+      );
+      print('[WeatherProvider] State updated: currentWeather=${state.currentWeather?.temperature}°C, forecast=${state.forecast.length} items');
+      print('[WeatherProvider] ===== GET WEATHER FOR LOCATION SUCCESS =====');
+      
       return weather;
     } catch (e) {
+      print('[WeatherProvider] ===== GET WEATHER FOR LOCATION ERROR =====');
       print('[WeatherProvider] Error fetching weather for location: $e');
       state = state.copyWith(error: '선택한 위치의 날씨 정보를 가져올 수 없습니다: ${e.toString()}', isLoading: false);
+      print('[WeatherProvider] State updated: error=${state.error}');
       rethrow;
     }
   }

@@ -46,7 +46,8 @@ export async function searchPlaces(query) {
   }
 
   try {
-    const url = `${KAKAO_BASE_URL}/search/keyword.json?query=${encodeURIComponent(query)}&size=20`;
+    // 더 많은 결과를 가져오기 위해 size를 30으로 증가
+    const url = `${KAKAO_BASE_URL}/search/keyword.json?query=${encodeURIComponent(query)}&size=30`;
     
     const response = await fetch(url, {
       headers: {
@@ -62,6 +63,8 @@ export async function searchPlaces(query) {
     const data = await response.json();
     const documents = data.documents || [];
     
+    console.log(`[KakaoService] Total results from Kakao API: ${documents.length}`);
+    
     // 한국의 도시/지역 관련 결과만 필터링하고 정리
     const filteredResults = documents
       .filter(doc => {
@@ -69,25 +72,38 @@ export async function searchPlaces(query) {
         const placeName = doc.place_name || '';
         const addressName = doc.address_name || '';
         
-        // 한국의 행정구역 관련 카테고리 필터링
-        return category.includes('지역') || 
-               category.includes('행정') ||
-               category.includes('시') ||
-               category.includes('도') ||
-               category.includes('구') ||
-               category.includes('군') ||
-               category.includes('특별시') ||
-               category.includes('광역시') ||
-               category.includes('자치시') ||
-               category.includes('자치도') ||
-               // 도시명에 시/도가 포함된 경우
-               placeName.includes('시') ||
-               placeName.includes('도') ||
-               placeName.includes('구') ||
-               placeName.includes('군') ||
-               // 주소에 시/도가 포함된 경우
-               addressName.includes('시') ||
-               addressName.includes('도');
+        // 더 포괄적인 필터링 조건
+        const isRegion = category.includes('지역') || 
+                        category.includes('행정') ||
+                        category.includes('시') ||
+                        category.includes('도') ||
+                        category.includes('구') ||
+                        category.includes('군') ||
+                        category.includes('특별시') ||
+                        category.includes('광역시') ||
+                        category.includes('자치시') ||
+                        category.includes('자치도') ||
+                        category.includes('읍') ||
+                        category.includes('면') ||
+                        category.includes('동');
+        
+        const hasRegionInName = placeName.includes('시') ||
+                               placeName.includes('도') ||
+                               placeName.includes('구') ||
+                               placeName.includes('군') ||
+                               placeName.includes('읍') ||
+                               placeName.includes('면') ||
+                               placeName.includes('동');
+        
+        const hasRegionInAddress = addressName.includes('시') ||
+                                  addressName.includes('도') ||
+                                  addressName.includes('구') ||
+                                  addressName.includes('군') ||
+                                  addressName.includes('읍') ||
+                                  addressName.includes('면') ||
+                                  addressName.includes('동');
+        
+        return isRegion || hasRegionInName || hasRegionInAddress;
       })
       .map(doc => ({
         ...doc,
@@ -95,7 +111,26 @@ export async function searchPlaces(query) {
         address_name: cleanAddressName(doc.address_name)
       }));
 
-    return filteredResults.map(doc => ({
+    console.log(`[KakaoService] Filtered results: ${filteredResults.length}`);
+
+    // 중복 제거 (동일한 좌표나 이름을 가진 결과 제거)
+    const uniqueResults = [];
+    const seen = new Set();
+    
+    for (const doc of filteredResults) {
+      const key = `${doc.place_name}_${doc.address_name}`;
+      const coordKey = `${doc.y}_${doc.x}`;
+      
+      if (!seen.has(key) && !seen.has(coordKey)) {
+        seen.add(key);
+        seen.add(coordKey);
+        uniqueResults.push(doc);
+      }
+    }
+
+    console.log(`[KakaoService] Unique results after deduplication: ${uniqueResults.length}`);
+
+    return uniqueResults.map(doc => ({
       id: doc.id,
       placeName: doc.place_name,
       addressName: doc.address_name,
@@ -140,34 +175,36 @@ export async function getAddressFromCoordinates(lat, lon) {
       const doc = documents[0];
       const address = doc.address || {};
       const roadAddress = doc.road_address || {};
-      
-      // 더 디테일한 위치 정보 구성
-      let placeName = '';
+
+      // 시/도(city)와 구/군(district) 분리 추출
+      let cityName = '';
+      let districtName = '';
       let addressName = '';
-      
+
       console.log(`[KakaoService] Kakao API response for ${lat}, ${lon}:`);
       console.log(`[KakaoService] - roadAddress:`, roadAddress);
       console.log(`[KakaoService] - address:`, address);
-      
+
       if (roadAddress.address_name) {
-        // 도로명 주소가 있는 경우
-        placeName = roadAddress.region_2depth_name || roadAddress.region_1depth_name || 'Unknown';
+        cityName = roadAddress.region_1depth_name || 'Unknown';
+        districtName = roadAddress.region_2depth_name || '';
         addressName = roadAddress.address_name;
-        console.log(`[KakaoService] Using road address: ${placeName} - ${addressName}`);
+        console.log(`[KakaoService] Using road address: city=${cityName}, district=${districtName}`);
       } else if (address.address_name) {
-        // 지번 주소가 있는 경우
-        placeName = address.region_2depth_name || address.region_1depth_name || 'Unknown';
+        cityName = address.region_1depth_name || 'Unknown';
+        districtName = address.region_2depth_name || '';
         addressName = address.address_name;
-        console.log(`[KakaoService] Using address: ${placeName} - ${addressName}`);
+        console.log(`[KakaoService] Using address: city=${cityName}, district=${districtName}`);
       } else {
-        placeName = 'Unknown Location';
+        cityName = 'Unknown Location';
+        districtName = '';
         addressName = 'Unknown Address';
         console.log(`[KakaoService] No valid address found, using fallback`);
       }
-      
+
       return {
         id: `location_${lat}_${lon}`,
-        placeName: placeName,
+        placeName: cityName, // 시/도
         addressName: addressName,
         roadAddressName: roadAddress.address_name || addressName,
         categoryName: '지역',
@@ -175,6 +212,7 @@ export async function getAddressFromCoordinates(lat, lon) {
         longitude: lon,
         phone: '',
         placeUrl: '',
+        districtName: districtName, // 구/군
       };
     }
     

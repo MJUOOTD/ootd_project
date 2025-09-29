@@ -105,54 +105,47 @@ class _HourlyRecommendationWidgetState extends ConsumerState<HourlyRecommendatio
                 ),
               ),
             ] else ...[
-              // 가로 스크롤 시간대 카드 (3일 후까지)
+              // 가로 스냅 스크롤 (카드 단위)
               SizedBox(
                 height: 120,
-                child: ListView.builder(
+                child: PageView.builder(
+                  controller: PageController(viewportFraction: 0.28), // 카드가 살짝 보이도록
+                  padEnds: false,
                   scrollDirection: Axis.horizontal,
-                  itemCount: forecast.isNotEmpty ? forecast.length : 24, // 3일 * 8시간 = 24개
+                  itemCount: forecast.isNotEmpty ? forecast.length : 24,
                   itemBuilder: (context, index) {
                     if (forecast.isNotEmpty && index < forecast.length) {
-                      // 백엔드에서 이미 정렬된 데이터를 사용
                       final weather = forecast[index];
-                      
-                      // timestamp는 WeatherModel에서 DateTime으로 변환되어 있음
                       final weatherTime = weather.timestamp;
-                      
                       final displayHour = weatherTime.hour;
                       final displayMinute = weatherTime.minute;
                       final timeSlot = _getTimeSlotWithDate(weatherTime, displayHour, displayMinute);
                       final weatherEmoji = _getWeatherEmojiFromCondition(weather.condition, displayHour);
                       final recommendation = _getRecommendationFromTemperature(weather.temperature);
                       final temperature = weather.temperature.round();
-                      
-                      print('[HourlyWidget] Item $index: $weatherTime - $timeSlot - ${weather.isCurrent ? 'CURRENT' : 'FUTURE'}');
-                      
                       return _buildHourlyCard(
-                        context, 
-                        timeSlot, 
-                        weatherEmoji, 
-                        recommendation, 
-                        temperature, 
+                        context,
+                        timeSlot,
+                        weatherEmoji,
+                        recommendation,
+                        temperature,
                         displayHour,
-                        weather.isCurrent
+                        weather.isCurrent,
                       );
                     } else {
-                      // fallback: 기존 mock 데이터
                       final displayHour = (now.hour + index) % 24;
                       final timeSlot = _getTimeSlot(displayHour);
                       final weatherEmoji = _getWeatherEmoji(displayHour);
                       final recommendation = _getRecommendation(displayHour);
                       final temperature = _getTemperature(displayHour);
-                      
                       return _buildHourlyCard(
-                        context, 
-                        timeSlot, 
-                        weatherEmoji, 
-                        recommendation, 
-                        temperature, 
+                        context,
+                        timeSlot,
+                        weatherEmoji,
+                        recommendation,
+                        temperature,
                         displayHour,
-                        false
+                        false,
                       );
                     }
                   },

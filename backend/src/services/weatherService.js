@@ -562,11 +562,11 @@ async function transformWeatherData(data, lat, lon) {
       
       // Kakao API 결과에서 정확한 위치 정보 추출
       locationInfo = {
-        city: kakaoResult.placeName || 'Unknown',
+        city: kakaoResult.placeName || 'Unknown',          // 예: 서울특별시, 부산광역시
         country: '대한민국',
-        district: kakaoResult.districtName || null,
+        district: kakaoResult.districtName || null,        // 예: 중구, 해운대구
         subLocality: null,
-        province: '경기도' // Kakao API는 한국 내에서만 사용
+        province: kakaoResult.placeName || null            // 시/도를 province에도 보존
       };
       
       console.log(`[WeatherService] ✅ Accurate location from Kakao API: ${locationInfo.city} ${locationInfo.district || ''}`);
