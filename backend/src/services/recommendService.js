@@ -18,7 +18,7 @@ function getSensitivityCoeff(profile) {
 }
 
 function buildCandidatePools(personalFeel, weather = {}, situation = '') {
-  // 온도 구간별 후보군 확장
+  
   const pools = {
     top: [], bottom: [], outer: [], shoes: [], accessories: []
   };

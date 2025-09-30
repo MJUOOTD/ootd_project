@@ -4,13 +4,13 @@ import 'dart:io';
 String getDefaultBackendBaseUrl() {
   if (Platform.isAndroid) {
     // Android 에뮬레이터에서 호스트 머신 접근
-    return 'http://10.0.2.2:4000';
+    return 'https://ootd-project-backend.onrender.com';
   } else if (Platform.isIOS) {
     // iOS 시뮬레이터에서 localhost 사용
-    return 'http://localhost:4000';
+    return 'https://ootd-project-backend.onrender.com';
   } else {
     // macOS, Windows, Linux 데스크톱
-    return 'http://localhost:4000';
+    return 'https://ootd-project-backend.onrender.com';
   }
 }
 

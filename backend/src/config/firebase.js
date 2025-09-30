@@ -20,8 +20,7 @@ try {
     
     firebaseApp = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      // Firestore 데이터베이스 URL (선택사항)
-      // databaseURL: "https://your-project-id-default-rtdb.firebaseio.com"
+
     });
   } catch (fileError) {
     // 서비스 계정 키 파일이 없는 경우 환경변수 사용
