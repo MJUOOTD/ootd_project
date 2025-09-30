@@ -484,8 +484,12 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
     // Form controllers
     final nameController = TextEditingController(text: currentUser.name);
     final ageController = TextEditingController(text: currentUser.age.toString());
-    String selectedGender = currentUser.gender;
-    String selectedActivityLevel = currentUser.activityLevel;
+    String? selectedGender = ['남성', '여성'].contains(currentUser.gender)
+        ? currentUser.gender
+        : null;
+    String? selectedActivityLevel = ['낮음', '보통', '높음'].contains(currentUser.activityLevel)
+        ? currentUser.activityLevel
+        : null;
     TemperatureSensitivity selectedTemperatureSensitivity = currentUser.temperatureSensitivity;
     
     showDialog(
@@ -616,8 +620,8 @@ class _MyPageScreenState extends ConsumerState<MyPageScreen> {
                 context,
                 nameController.text,
                 int.tryParse(ageController.text) ?? currentUser.age,
-                selectedGender,
-                selectedActivityLevel,
+                selectedGender ?? '남성',
+                selectedActivityLevel ?? '보통',
                 selectedTemperatureSensitivity,
               ),
               style: ElevatedButton.styleFrom(

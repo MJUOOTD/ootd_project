@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ootd_app/providers/weather_provider.dart';
 import 'package:ootd_app/providers/recommendation_provider.dart';
+import 'package:ootd_app/providers/user_provider.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:ootd_app/models/weather_model.dart';
+import 'package:ootd_app/models/feedback_model.dart';
 import '../screens/city_search_screen.dart';
 
 class WeatherWidget extends ConsumerStatefulWidget {
@@ -21,13 +24,13 @@ class WeatherWidget extends ConsumerStatefulWidget {
 }
 
 class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
-  bool _hasShownDialog = false;
   bool _isRefreshing = false;
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(weatherProvider);
     final recState = ref.watch(recommendationProvider);
+    final userState = ref.watch(userProvider);
     final w = widget.weather ?? state.currentWeather;
     final isLoading = state.isLoading;
     final error = state.error;
@@ -45,14 +48,7 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
     
     final hasError = error != null && error.isNotEmpty && !hasLocationPermissionError;
     
-    if (hasLocationPermissionError && !_hasShownDialog) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _hasShownDialog = true;
-          _showLocationPermissionDialog(context);
-        }
-      });
-    }
+    // 위치 권한 경고는 홈 화면 상단 배너에서 한 번만 표시하도록 이곳에서는 중복 표시하지 않음
     
     return Stack(
       children: [
@@ -72,9 +68,9 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header (reserve space on the right for overlay)
+              // Header
               Padding(
-                padding: const EdgeInsets.only(right: 56),
+                padding: const EdgeInsets.only(right: 0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -96,23 +92,80 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
                         ),
                       ],
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    Row(
                       children: [
-                        Text(
-                          '${w.temperature.round()}°C',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2C3E50),
+                        if (state.isManualSelection)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Text(
+                              '수동',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue[700],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        GestureDetector(
+                          onTap: () async {
+                            if (_isRefreshing) return;
+                            setState(() => _isRefreshing = true);
+                            try {
+                              if (widget.onRefresh != null) {
+                                widget.onRefresh!();
+                              } else {
+                                await ref.read(weatherProvider.notifier).refreshWeather();
+                              }
+                            } finally {
+                              if (mounted) setState(() => _isRefreshing = false);
+                            }
+                          },
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.blue[200]!),
+                            ),
+                            child: Icon(
+                              Icons.refresh,
+                              size: 16,
+                              color: Colors.blue[600],
+                            ),
                           ),
                         ),
-                        Text(
-                          '체감 ${w.feelsLike.round()}°C',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
+                        const SizedBox(width: 8),
+                        // 더보기 버튼을 같은 라인에 배치해 정렬
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const CitySearchScreen(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 32,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF6F7F9),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.black.withOpacity(0.07)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.03),
+                                  blurRadius: 3,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.more_horiz,
+                              size: 16,
+                              color: Colors.grey[700],
+                            ),
                           ),
                         ),
                       ],
@@ -181,17 +234,31 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          _getWeatherConditionKorean(w.condition),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2C3E50),
-                          ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '${w.temperature.round()}°C',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2C3E50),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '체감 ${w.feelsLike.round()}°C',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _getWeatherMessage(w.temperature),
+                          '${_getWeatherConditionKorean(w.condition)} · ${_getWeatherMessage(w.temperature)}',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[600],
@@ -252,89 +319,19 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
                         ),
                       ),
                     ),
+                    // 작은 온도 피드백 버튼들 (오른쪽, 컴팩트)
+                    _tinyFeedbackButton('🥶', () => _handleTinyFeedback(userState, wasTooCold: true)),
+                    const SizedBox(width: 6),
+                    _tinyFeedbackButton('👌', () => _handleTinyFeedback(userState)),
+                    const SizedBox(width: 6),
+                    _tinyFeedbackButton('🥵', () => _handleTinyFeedback(userState, wasTooHot: true)),
                   ],
                 ),
               ),
             ],
           ),
         ),
-
-        // 상단 우측 오버레이: 네모난 더보기(…) + 그 아래 새로고침
-        Positioned(
-          top: 12,
-          right: 10,
-          child: Column(
-            children: [
-              // 더보기 버튼 (연한 회색 박스 + more_horiz 아이콘)
-              GestureDetector(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const CitySearchScreen(),
-                    ),
-                  );
-                },
-                child: Container(
-                  width: 32,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF6F7F9),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.black.withOpacity(0.07)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
-                        blurRadius: 3,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    Icons.more_horiz,
-                    size: 16,
-                    color: Colors.grey[700],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              // 새로고침 버튼 (연한 파란 배경 + 파란 보더)
-              GestureDetector(
-                onTap: () async {
-                  if (_isRefreshing) return;
-                  setState(() => _isRefreshing = true);
-                  try {
-                    if (widget.onRefresh != null) {
-                      widget.onRefresh!();
-                    } else {
-                      await ref.read(weatherProvider.notifier).refreshWeather();
-                    }
-                  } finally {
-                    if (mounted) setState(() => _isRefreshing = false);
-                  }
-                },
-                child: Container(
-                  width: 32,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue[200]!),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
-                        blurRadius: 3,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(Icons.refresh, size: 16, color: Colors.blue[600]),
-                ),
-              ),
-            ],
-          ),
-        ),
+        
       ],
     );
   }
@@ -352,9 +349,74 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
     return null;
   }
 
+  // Compact feedback buttons used in the recommendation row
+  Widget _tinyFeedbackButton(String emoji, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFDDE7F7)),
+        ),
+        child: Text(emoji, style: const TextStyle(fontSize: 12)),
+      ),
+    );
+  }
+
+  Future<void> _handleTinyFeedback(UserState userState, {bool wasTooHot = false, bool wasTooCold = false}) async {
+    if (!mounted) return;
+    if (!userState.isLoggedIn) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('로그인이 필요해요'),
+          content: const Text('피드백을 주시면 더 정확한 추천을 받을 수 있어요.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('나중에')),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                context.pushNamed('login');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(239, 107, 141, 252),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('로그인하기'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    // Save feedback (placeholder)
+    final feedback = FeedbackModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      userId: userState.currentUser!.id,
+      outfitId: 'today_recommendation',
+      type: FeedbackType.temperature,
+      rating: wasTooHot || wasTooCold ? 2 : 5,
+      comment: wasTooHot ? '더웠어요' : wasTooCold ? '추웠어요' : '딱 좋아요',
+      timestamp: DateTime.now(),
+      metadata: {
+        'wasTooHot': wasTooHot,
+        'wasTooCold': wasTooCold,
+        'context': 'today_recommendation_row',
+      },
+    );
+    // ignore: unused_local_variable
+    final _ = feedback; // TODO: integrate with backend feedback service
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('온도 피드백이 저장되었습니다.')),
+    );
+  }
+
   // 새로 추가: 위치 행 렌더링
   Widget _buildLocationRow(WeatherModel w, bool hasLocationPermissionError, bool isManualSelection) {
-    final locationLabel = (w.location.city.isNotEmpty ? w.location.city : '현재 위치');
+    final locationLabel = w.location.formattedLocation;
     return Row(
       children: [
         Icon(Icons.location_on, color: Colors.grey[600], size: 16),
@@ -366,18 +428,6 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        if (isManualSelection)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.blue[50],
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '수동',
-              style: TextStyle(color: Colors.blue[700], fontSize: 11, fontWeight: FontWeight.w600),
-            ),
-          ),
       ],
     );
   }
@@ -589,19 +639,5 @@ class _WeatherWidgetState extends ConsumerState<WeatherWidget> {
     );
   }
 
-  void _showLocationPermissionDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('위치 권한 필요'),
-        content: const Text('정확한 날씨 정보를 위해 위치 권한을 허용해주세요.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('확인'),
-          ),
-        ],
-      ),
-    );
-  }
+  // 권한 경고 다이얼로그는 홈 상단 배너 또는 검색 화면에서 한 번만 표시
 }

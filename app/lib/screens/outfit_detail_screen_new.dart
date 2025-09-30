@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class OutfitDetailScreenNew extends StatelessWidget {
   final String situation;
@@ -316,10 +317,12 @@ class OutfitDetailScreenNew extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // 로그인 페이지로 이동
+              // Use go_router route name to navigate
+              // ignore: use_build_context_synchronously
+              context.pushNamed('login');
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
+              backgroundColor: const Color.fromARGB(239, 107, 141, 252),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),

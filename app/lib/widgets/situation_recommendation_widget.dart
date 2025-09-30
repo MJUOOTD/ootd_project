@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/pexels_api_service.dart';
-import '../providers/recommendation_provider.dart';
+// Temperature feedback UI removed per request
 
 class SituationRecommendationWidget extends ConsumerStatefulWidget {
   const SituationRecommendationWidget({super.key});
@@ -99,6 +99,8 @@ class _SituationRecommendationWidgetState extends ConsumerState<SituationRecomme
       ),
     );
   }
+
+  // Temperature feedback row removed
 
   Widget _buildCategoryTab(String title, IconData icon, bool isSelected) {
     return GestureDetector(

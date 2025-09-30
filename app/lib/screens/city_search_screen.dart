@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/kakao_api_service.dart';
 import '../services/favorites_service.dart';
 import '../providers/weather_provider.dart';
+// No permission prompts here to avoid popups when navigating
 
 class CitySearchScreen extends ConsumerStatefulWidget {
   const CitySearchScreen({super.key});
@@ -77,6 +78,8 @@ class _CitySearchScreenState extends ConsumerState<CitySearchScreen> {
     _searchFocusNode.dispose();
     super.dispose();
   }
+
+  // Removed permission hint dialog to prevent cross-page popups
 
   Future<void> _loadFavorites() async {
     setState(() {
@@ -479,7 +482,6 @@ class _CitySearchScreenState extends ConsumerState<CitySearchScreen> {
       itemCount: _searchResults.length,
       itemBuilder: (context, index) {
         final place = _searchResults[index];
-        final isFavorite = FavoritesService.isFavorite(place.id);
         
         return Container(
           margin: const EdgeInsets.only(bottom: 10),

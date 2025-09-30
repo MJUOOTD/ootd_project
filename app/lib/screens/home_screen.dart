@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../providers/weather_provider.dart';
 import '../providers/user_provider.dart';
 import '../models/user_model.dart';
 import '../providers/recommendation_provider.dart';
 import '../providers/location_permission_provider.dart';
+import 'package:go_router/go_router.dart';
 import '../widgets/weather_widget.dart';
 import '../widgets/hourly_recommendation_widget.dart';
 import '../widgets/situation_recommendation_widget.dart';
 import 'notification_list_screen.dart';
 import 'cart_screen.dart';
-import '../widgets/feedback_modal.dart';
+import 'city_search_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -113,25 +113,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _handleCartAccess();
             },
           ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Color(0xFF030213)),
-            onSelected: (value) {
-              switch (value) {
-                case 'feedback':
-                  showDialog(
-                    context: context,
-                    builder: (context) => const FeedbackModal(),
-                  );
-                  break;
-              }
-            },
-            itemBuilder: (BuildContext context) => const [
-              PopupMenuItem<String>(
-                value: 'feedback',
-                child: Text('피드백 보내기'),
-              ),
-            ],
-          ),
         ],
       ),
       body: Consumer(
@@ -139,6 +120,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           final weatherState = ref.watch(weatherProvider);
           final userState = ref.watch(userProvider);
           final locationPermissionState = ref.watch(locationPermissionProvider);
+          bool isOnHomeRoute = true;
+          try {
+            final currentPath = GoRouterState.of(context).uri.path;
+            isOnHomeRoute = currentPath == '/home' || currentPath == '/';
+          } catch (_) {
+            isOnHomeRoute = true;
+          }
           
           
           // 위치 권한 상태 변화 감지 (build 메서드에서만 ref.listen 사용 가능)
@@ -163,8 +151,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onRefresh: _refreshData,
                 child: _buildMainContent(weatherState, userState),
               ),
-              // 위치 권한 거부 시 우측 상단 알림 (권한이 거부되거나 불명확하고 닫히지 않은 경우에만)
-              if ((locationPermissionState.isDenied || locationPermissionState.isDeniedForever || locationPermissionState.isUnknown) && !_isNotificationDismissed)
+              // 위치 권한 거부 시 우측 상단 알림 (Home 라우트에서만, 명시적 거부시에만)
+              if (isOnHomeRoute && (locationPermissionState.isDenied || locationPermissionState.isDeniedForever) && !_isNotificationDismissed)
                 _buildLocationPermissionNotification(context, ref),
             ],
           );
@@ -290,15 +278,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              ref.read(weatherProvider.notifier).fetchCurrentWeather();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF030213),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('다시 시도'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  ref.read(weatherProvider.notifier).fetchCurrentWeather();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF030213),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('다시 시도'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CitySearchScreen()),
+                  );
+                },
+                icon: const Icon(Icons.place_outlined),
+                label: const Text('위치 검색'),
+              ),
+            ],
           ),
         ],
       ),
@@ -343,21 +347,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: const [
-                Icon(Icons.location_off, size: 20, color: Colors.red),
-                SizedBox(width: 8),
-                Text(
-                  '위치 권한 필요',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
+            InkWell(
+              onTap: () async {
+                // 설정 페이지로 이동하여 권한 변경 유도
+                await ref.read(locationPermissionProvider.notifier).openLocationSettings();
+              },
+              child: Row(
+                children: const [
+                  Icon(Icons.location_off, size: 20, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text(
+                    '위치 권한 필요',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
                   ),
-                ),
-                Spacer(),
-                Icon(Icons.close, size: 18, color: Colors.grey),
-              ],
+                  Spacer(),
+                  Icon(Icons.settings, size: 18, color: Colors.grey),
+                ],
+              ),
             ),
             SizedBox(height: 8),
             Text(
