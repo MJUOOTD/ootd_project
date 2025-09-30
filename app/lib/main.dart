@@ -8,6 +8,7 @@ import 'services/favorites_service.dart';
 import 'theme/app_theme.dart';
 import 'services/pexels_api_service.dart';
 import 'providers/user_provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,8 +22,16 @@ void main() async {
   final container = ProviderContainer();
   
   await serviceLocator.initialize();
-  // Pexels API 키 설정
-  PexelsApiService.setApiKey('QwYk7NDUowPtA83vo1RHNYSHCWWnDTd8MNlm8giDiGq8blf1iPAHu1DP');
+  // 환경 변수 로드 (.env)
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (_) {}
+
+  // Pexels API 키 설정 (환경 변수에서 로드)
+  final pexelsApiKey = dotenv.env['PEXELS_API_KEY'];
+  if (pexelsApiKey != null && pexelsApiKey.isNotEmpty) {
+    PexelsApiService.setApiKey(pexelsApiKey);
+  }
   // 즐겨찾기 서비스 초기화
   await FavoritesService.initialize();
   

@@ -199,3 +199,6 @@ secrets.json
 
 # Android/Flutter build folder
 /app/build/
+app/.env
+backend/.env
+backend/firebase-service-account-key.json
