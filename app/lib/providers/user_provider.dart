@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import '../services/simple_auth_service.dart';
+import '../services/service_locator.dart';
 
 class UserState {
   final UserModel? currentUser;
@@ -58,74 +59,60 @@ class UserProvider extends StateNotifier<UserState> {
       UserModel? currentUser;
       
       if (firebaseUser != null) {
-        // User is authenticated with Firebase
-        final userData = prefs.getString('userData');
-        if (userData != null) {
-          try {
-            // Parse user data from SharedPreferences
-            // currentUser = UserModel.fromJson(jsonDecode(userData));
-            // For now, create a basic user model
-            currentUser = UserModel(
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName ?? 'User',
-              email: firebaseUser.email ?? '',
-              gender: '남성',
-              age: 25,
-              bodyType: '보통',
-              activityLevel: '보통',
-              temperatureSensitivity: TemperatureSensitivity.normal,
-              stylePreferences: ['캐주얼', '깔끔한'],
-              situationPreferences: {
-                '출근': true,
-                '데이트': true,
-                '운동': false,
-              },
-              createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
-              updatedAt: firebaseUser.metadata.lastSignInTime ?? DateTime.now(),
-            );
-          } catch (e) {
-            print('Error parsing user data: $e');
-            // Create a basic user model if parsing fails
-            currentUser = UserModel(
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName ?? 'User',
-              email: firebaseUser.email ?? '',
-              gender: '남성',
-              age: 25,
-              bodyType: '보통',
-              activityLevel: '보통',
-              temperatureSensitivity: TemperatureSensitivity.normal,
-              stylePreferences: ['캐주얼', '깔끔한'],
-              situationPreferences: {
-                '출근': true,
-                '데이트': true,
-                '운동': false,
-              },
-              createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
-              updatedAt: firebaseUser.metadata.lastSignInTime ?? DateTime.now(),
-            );
+        // 1) Firestore 원격 프로필 우선 로드
+        try {
+          final remote = await serviceLocator.userService.getUserProfile(userId: firebaseUser.uid);
+          if (remote != null) {
+            currentUser = remote;
           }
-        } else {
-          // No user data in SharedPreferences, create basic user model
-          currentUser = UserModel(
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName ?? 'User',
-            email: firebaseUser.email ?? '',
-            gender: '남성',
-            age: 25,
-            bodyType: '보통',
-            activityLevel: '보통',
-            temperatureSensitivity: TemperatureSensitivity.normal,
-            stylePreferences: ['캐주얼', '깔끔한'],
-            situationPreferences: {
-              '출근': true,
-              '데이트': true,
-              '운동': false,
-            },
-            createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
-            updatedAt: firebaseUser.metadata.lastSignInTime ?? DateTime.now(),
-          );
+        } catch (_) {}
+
+        // 2) 로컬 캐시가 있으면 보조로 사용
+        if (currentUser == null) {
+          final userData = prefs.getString('userData');
+          if (userData != null) {
+            try {
+              currentUser = UserModel(
+                id: firebaseUser.uid,
+                name: firebaseUser.displayName ?? 'User',
+                email: firebaseUser.email ?? '',
+                gender: '남성',
+                age: 25,
+                bodyType: '보통',
+                activityLevel: '보통',
+                temperatureSensitivity: TemperatureSensitivity.normal,
+                stylePreferences: ['캐주얼', '깔끔한'],
+                situationPreferences: {
+                  '출근': true,
+                  '데이트': true,
+                  '운동': false,
+                },
+                createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
+                updatedAt: firebaseUser.metadata.lastSignInTime ?? DateTime.now(),
+              );
+            } catch (_) {}
+          }
         }
+
+        // 3) 여전히 null이면 최소 기본 모델
+        currentUser ??= UserModel(
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName ?? 'User',
+          email: firebaseUser.email ?? '',
+          gender: '남성',
+          age: 25,
+          bodyType: '보통',
+          activityLevel: '보통',
+          temperatureSensitivity: TemperatureSensitivity.normal,
+          stylePreferences: ['캐주얼', '깔끔한'],
+          situationPreferences: {
+            '출근': true,
+            '데이트': true,
+            '운동': false,
+          },
+          createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
+          updatedAt: firebaseUser.metadata.lastSignInTime ?? DateTime.now(),
+        );
       } else {
         // Firebase user is null, ensure currentUser is also null
         currentUser = null;
@@ -146,32 +133,24 @@ class UserProvider extends StateNotifier<UserState> {
 
   // Unified sign-out: Firebase session + local state reset, with auth-state wait
   Future<void> signOutAll() async {
-    print('[signOutAll] Starting logout process...');
     state = state.copyWith(isLoading: true, error: null);
     Object? signOutError;
     try {
       // Use SimpleAuthService for logout
       final authService = SimpleAuthService.instance;
-      print('[signOutAll] Calling Firebase signOut...');
       await authService.signOut();
-      print('[signOutAll] Firebase signOut completed');
       
       // Wait for auth state to change
       try {
-        print('[signOutAll] Waiting for auth state change...');
         await authService.authState
             .firstWhere((u) => u == null)
             .timeout(const Duration(seconds: 3), onTimeout: () => null);
-        print('[signOutAll] Auth state changed to null');
       } catch (_) {
-        print('[signOutAll] Auth state wait timeout or error');
         // Ignore wait errors; we'll still finalize local state
       }
     } catch (e) {
-      print('[signOutAll] Error during logout: $e');
       signOutError = e;
     } finally {
-      print('[signOutAll] Finalizing local state...');
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('userData');
       await prefs.setBool('isFirstTime', true);
@@ -181,7 +160,6 @@ class UserProvider extends StateNotifier<UserState> {
         isLoading: false,
         error: signOutError == null ? null : 'Failed to sign out: ${signOutError.toString()}',
       );
-      print('[signOutAll] Local state cleared. Current user: ${state.currentUser}');
     }
   }
 
@@ -194,6 +172,17 @@ class UserProvider extends StateNotifier<UserState> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isFirstTime', false);
       await prefs.setString('userData', user.toJson().toString());
+      
+      // Firebase Auth에서 현재 사용자 ID 가져오기
+      final currentUser = fb.FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        // TemperatureSettings 초기화
+        final temperatureSettingsInitializer = serviceLocator.temperatureSettingsInitializer;
+        await temperatureSettingsInitializer.initializeFromUser(user, currentUser.uid);
+        print('[UserProvider] TemperatureSettings initialized for user: ${currentUser.uid}');
+      } else {
+        print('[UserProvider] No Firebase user found, skipping TemperatureSettings initialization');
+      }
       
       state = state.copyWith(
         currentUser: user,
@@ -218,6 +207,24 @@ class UserProvider extends StateNotifier<UserState> {
       // Save to SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('userData', newUser.toJson().toString());
+
+      // Firestore users/{uid} upsert
+      final fbUser = fb.FirebaseAuth.instance.currentUser;
+      if (fbUser != null) {
+        try {
+          await serviceLocator.userService.upsertUserProfile(userId: fbUser.uid, user: newUser);
+        } catch (e) {
+          // Firestore 저장 실패 시 에러 보관 (UI 알림은 유지)
+          state = state.copyWith(error: 'Failed to save profile: ${e.toString()}');
+        }
+
+        // TemperatureSettings 재생성/갱신
+        try {
+          await serviceLocator.temperatureSettingsInitializer.initializeFromUser(newUser, fbUser.uid);
+        } catch (e) {
+          state = state.copyWith(error: 'Failed to update temperature settings: ${e.toString()}');
+        }
+      }
       
       state = state.copyWith(
         currentUser: newUser,
@@ -285,14 +292,12 @@ class UserProvider extends StateNotifier<UserState> {
 
   // Clear user state without Firebase signout (for auth state listener)
   void clearUser() {
-    print('[clearUser] Clearing user state...');
     state = UserState(
       currentUser: null,
       isLoading: false,
       error: null,
       isFirstTime: state.isFirstTime,
     );
-    print('[clearUser] User state cleared. Current user: ${state.currentUser}');
   }
 
   // Create a new user for onboarding
@@ -337,16 +342,13 @@ final authStateProvider = StreamProvider<fb.User?>((ref) {
 // Firebase 인증 상태 변화를 감지하여 UserProvider 업데이트
 final authStateListenerProvider = StreamProvider<void>((ref) {
   return SimpleAuthService.instance.authState.map((user) {
-    print('[authStateListenerProvider] Firebase user changed: ${user?.uid}');
     // 로그인 시에만 UserProvider 초기화 (로그아웃 시에는 initialize 호출하지 않음)
     if (user != null) {
-      print('[authStateListenerProvider] User logged in, initializing...');
       ref.read(userProvider.notifier).initialize();
     } else {
-      print('[authStateListenerProvider] User logged out, clearing user state...');
       // 로그아웃 시에는 사용자 상태만 초기화
       ref.read(userProvider.notifier).clearUser();
     }
-    return null;
+    return;
   });
 });

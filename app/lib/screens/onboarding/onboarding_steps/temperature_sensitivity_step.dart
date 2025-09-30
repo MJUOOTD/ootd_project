@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../models/user_model.dart';
+import '../../../../models/user_model.dart';
 
 class TemperatureSensitivityStep extends StatefulWidget {
   final TemperatureSensitivity temperatureSensitivity;

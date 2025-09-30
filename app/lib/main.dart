@@ -1,61 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'app_router.dart';
 import 'services/service_locator.dart';
+import 'services/favorites_service.dart';
 import 'theme/app_theme.dart';
-import 'firebase_options.dart';
-import 'package:flutter/foundation.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'services/pexels_api_service.dart';
 import 'providers/user_provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Firebase 초기화
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  if (kIsWeb) {
-  // 즉시성 우선이면 SESSION 권장, 완전 일시적이면 NONE도 가능
-  await FirebaseAuth.instance.setPersistence(Persistence.SESSION);
-}
-  //디버그용
-  FirebaseAuth.instance.authStateChanges().listen((user) {
-    debugPrint('[authStateChanges] user: ${user?.uid}');
-  });
+  
+  // ProviderContainer 생성
+  final container = ProviderContainer();
   
   await serviceLocator.initialize();
-  // Pexels API 키 설정
-  PexelsApiService.setApiKey('QwYk7NDUowPtA83vo1RHNYSHCWWnDTd8MNlm8giDiGq8blf1iPAHu1DP');
+  // 환경 변수 로드 (.env)
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (_) {}
+
+  // Pexels API 키 설정 (환경 변수에서 로드)
+  final pexelsApiKey = dotenv.env['PEXELS_API_KEY'] ;
+  if (pexelsApiKey != null && pexelsApiKey.isNotEmpty) {
+    PexelsApiService.setApiKey(pexelsApiKey);
+  }
+  // 즐겨찾기 서비스 초기화
+  await FavoritesService.initialize();
   
   runApp(
-    ProviderScope(
+    UncontrolledProviderScope(
+      container: container,
       child: const OOTDApp(),
     ),
   );
 }
 
-class OOTDApp extends ConsumerStatefulWidget {
+class OOTDApp extends ConsumerWidget {
   const OOTDApp({super.key});
 
   @override
-  ConsumerState<OOTDApp> createState() => _OOTDAppState();
-}
-
-class _OOTDAppState extends ConsumerState<OOTDApp> {
-  @override
-  void initState() {
-    super.initState();
-    // UserProvider 초기화
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(userProvider.notifier).initialize();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Firebase 인증 상태 변화를 감지하여 UserProvider 업데이트
     ref.listen(authStateListenerProvider, (previous, next) {
       // authStateListenerProvider가 자동으로 UserProvider를 업데이트함

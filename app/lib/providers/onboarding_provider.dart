@@ -1,85 +1,132 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/user_model.dart';
 
-class OnboardingState {
-  final UserModel? user;
-  final bool isLoading;
-  final String? error;
+// Onboarding data model
+class OnboardingData {
+  final String name;
+  final String email;
+  final String gender;
+  final int age;
+  final String temperatureSensitivity;
+  final List<String> stylePreferences;
 
-  OnboardingState({
-    this.user,
-    this.isLoading = false,
-    this.error,
+  const OnboardingData({
+    required this.name,
+    required this.email,
+    required this.gender,
+    required this.age,
+    required this.temperatureSensitivity,
+    required this.stylePreferences,
   });
 
-  // Convenience getters
-  String get name => user?.name ?? '';
-  String get email => user?.email ?? '';
-  int get age => user?.age ?? 0;
-  String get gender => user?.gender ?? '';
-
-  OnboardingState copyWith({
-    UserModel? user,
-    bool? isLoading,
-    String? error,
+  OnboardingData copyWith({
+    String? name,
+    String? email,
+    String? gender,
+    int? age,
+    String? temperatureSensitivity,
+    List<String>? stylePreferences,
   }) {
-    return OnboardingState(
-      user: user ?? this.user,
-      isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+    return OnboardingData(
+      name: name ?? this.name,
+      email: email ?? this.email,
+      gender: gender ?? this.gender,
+      age: age ?? this.age,
+      temperatureSensitivity: temperatureSensitivity ?? this.temperatureSensitivity,
+      stylePreferences: stylePreferences ?? this.stylePreferences,
+    );
+  }
+
+  bool get isBasicInfoComplete => 
+      name.isNotEmpty && email.isNotEmpty && gender.isNotEmpty && age > 0;
+
+  bool get isSensitivityComplete => temperatureSensitivity.isNotEmpty;
+
+  bool get isStylePreferencesComplete => stylePreferences.isNotEmpty;
+
+  bool get isComplete => 
+      isBasicInfoComplete && isSensitivityComplete && isStylePreferencesComplete;
+}
+
+// Onboarding state notifier
+class OnboardingNotifier extends StateNotifier<OnboardingData> {
+  OnboardingNotifier() : super(const OnboardingData(
+    name: '',
+    email: '',
+    gender: '',
+    age: 0,
+    temperatureSensitivity: '',
+    stylePreferences: [],
+  ));
+
+  void updateName(String name) {
+    state = state.copyWith(name: name);
+  }
+
+  void updateEmail(String email) {
+    state = state.copyWith(email: email);
+  }
+
+  void updateGender(String gender) {
+    state = state.copyWith(gender: gender);
+  }
+
+  void updateAge(int age) {
+    state = state.copyWith(age: age);
+  }
+
+  void updateTemperatureSensitivity(String sensitivity) {
+    state = state.copyWith(temperatureSensitivity: sensitivity);
+  }
+
+  void updateStylePreferences(List<String> preferences) {
+    state = state.copyWith(stylePreferences: preferences);
+  }
+
+  void toggleStylePreference(String preference) {
+    final currentPreferences = List<String>.from(state.stylePreferences);
+    if (currentPreferences.contains(preference)) {
+      currentPreferences.remove(preference);
+    } else {
+      currentPreferences.add(preference);
+    }
+    state = state.copyWith(stylePreferences: currentPreferences);
+  }
+
+  void reset() {
+    state = const OnboardingData(
+      name: '',
+      email: '',
+      gender: '',
+      age: 0,
+      temperatureSensitivity: '',
+      stylePreferences: [],
     );
   }
 }
 
-class OnboardingProvider extends StateNotifier<OnboardingState> {
-  OnboardingProvider() : super(OnboardingState());
-
-  void updateUser(UserModel user) {
-    state = state.copyWith(user: user);
-  }
-
-  void setLoading(bool loading) {
-    state = state.copyWith(isLoading: loading);
-  }
-
-  void setError(String error) {
-    state = state.copyWith(error: error);
-  }
-
-  void clearError() {
-    state = state.copyWith(error: null);
-  }
-
-  // Update individual fields
-  void updateName(String name) {
-    if (state.user != null) {
-      final updatedUser = state.user!.copyWith(name: name);
-      state = state.copyWith(user: updatedUser);
-    }
-  }
-
-  void updateEmail(String email) {
-    if (state.user != null) {
-      final updatedUser = state.user!.copyWith(email: email);
-      state = state.copyWith(user: updatedUser);
-    }
-  }
-
-  void updateGender(String gender) {
-    if (state.user != null) {
-      final updatedUser = state.user!.copyWith(gender: gender);
-      state = state.copyWith(user: updatedUser);
-    }
-  }
-
-  void updateAge(int age) {
-    if (state.user != null) {
-      final updatedUser = state.user!.copyWith(age: age);
-      state = state.copyWith(user: updatedUser);
-    }
-  }
-}
-
-final onboardingProvider = StateNotifierProvider<OnboardingProvider, OnboardingState>((ref) {
-  return OnboardingProvider();
+// Provider
+final onboardingProvider = StateNotifierProvider<OnboardingNotifier, OnboardingData>((ref) {
+  return OnboardingNotifier();
 });
+
+// Individual step validation providers
+final basicInfoValidationProvider = Provider<bool>((ref) {
+  final data = ref.watch(onboardingProvider);
+  return data.isBasicInfoComplete;
+});
+
+final sensitivityValidationProvider = Provider<bool>((ref) {
+  final data = ref.watch(onboardingProvider);
+  return data.isSensitivityComplete;
+});
+
+final stylePreferencesValidationProvider = Provider<bool>((ref) {
+  final data = ref.watch(onboardingProvider);
+  return data.isStylePreferencesComplete;
+});
+
+final onboardingCompleteProvider = Provider<bool>((ref) {
+  final data = ref.watch(onboardingProvider);
+  return data.isComplete;
+});
+

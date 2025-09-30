@@ -1,4 +1,4 @@
-name: ootd_app
+name: outfit_app
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -39,22 +39,7 @@ dependencies:
   http: ^1.5.0
   geolocator: ^14.0.2
   firebase_auth: ^6.1.0
-  
-  # State management
-  flutter_riverpod: ^2.6.1
-  provider: ^6.1.2
-  
-  # Navigation
-  go_router: ^14.6.2
-  
-  # Storage
-  shared_preferences: ^2.3.3
-  
-  # UI
-  cached_network_image: ^3.4.1
-  
-  # Location
-  permission_handler: ^11.3.1
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
@@ -108,3 +93,12 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  android: true   # 안드로이드 아이콘을 생성합니다.
+  ios: true       # iOS 아이콘을 생성합니다.
+  image_path: "assets/images/icon.png" # 1단계에서 준비한 아이콘 이미지 경로
+
+  # (선택사항) 안드로이드 8.0 이상을 위한 적응형 아이콘 설정
+  adaptive_icon_background: "#FFFFFF" # 아이콘 배경색 (예: 흰색)
+  adaptive_icon_foreground: "assets/images/icon_foreground.png" # 아이콘 전경 이미지 (배경이 없는 투명 PNG)

@@ -12,6 +12,7 @@ class SignUpScreen extends ConsumerStatefulWidget {
   ConsumerState<SignUpScreen> createState() => _SignUpScreenState();
 }
 
+
 class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -549,8 +550,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       if (mounted) {
         String errorMessage = '회원가입에 실패했습니다.';
         
-        if (e.toString().contains('email-already-in-use')) {
-          errorMessage = '이미 사용 중인 아이디입니다.';
+        if (e.toString().contains('이미 사용 중인 아이디입니다')) {
+          errorMessage = '중복된 아이디입니다.';
+        } else if (e.toString().contains('email-already-in-use')) {
+          errorMessage = '중복된 아이디입니다.';
         } else if (e.toString().contains('weak-password')) {
           errorMessage = '비밀번호가 너무 약합니다. 더 강한 비밀번호를 사용해주세요.';
         } else if (e.toString().contains('invalid-email')) {

@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/weather_provider.dart';
 import '../providers/user_provider.dart';
+import '../models/user_model.dart';
 import '../providers/recommendation_provider.dart';
+import '../providers/location_permission_provider.dart';
+import 'package:go_router/go_router.dart';
 import '../widgets/weather_widget.dart';
 import '../widgets/hourly_recommendation_widget.dart';
 import '../widgets/situation_recommendation_widget.dart';
 import 'notification_list_screen.dart';
 import 'cart_screen.dart';
-import '../widgets/feedback_modal.dart';
+import 'city_search_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -18,13 +21,21 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _isNotificationDismissed = false;
+
   @override
   void initState() {
     super.initState();
     // It's safer to call this after the first frame is built.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeData();
+      _checkLocationPermission();
     });
+  }
+
+  Future<void> _checkLocationPermission() async {
+    // 위치 권한 상태를 다시 확인
+    await ref.read(locationPermissionProvider.notifier).checkAndRequestPermission();
   }
 
   Future<void> _initializeData() async {
@@ -37,11 +48,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final userState = ref.read(userProvider);
     final weatherState = ref.read(weatherProvider);
 
-    // Check conditions using the state objects.
-    if (userState.isLoggedIn && weatherState.hasWeather) {
+    // 추천 생성 (날씨가 있으면 항상)
+    if (weatherState.currentWeather != null) {
+      final UserModel userForRec = userState.isLoggedIn
+          ? userState.currentUser!
+          : _guestUser();
       await ref.read(recommendationProvider.notifier).generateRecommendations(
         weather: weatherState.currentWeather!,
-        user: userState.currentUser!,
+        user: userForRec,
       );
       if (!mounted) return;
     }
@@ -56,10 +70,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final userState = ref.read(userProvider);
     final weatherState = ref.read(weatherProvider);
 
-    if (userState.isLoggedIn && weatherState.hasWeather) {
+    // 추천 새로고침 (날씨가 있으면 항상)
+    if (weatherState.currentWeather != null) {
+      final UserModel userForRec = userState.isLoggedIn
+          ? userState.currentUser!
+          : _guestUser();
       await ref.read(recommendationProvider.notifier).refreshRecommendations(
         weather: weatherState.currentWeather!,
-        user: userState.currentUser!,
+        user: userForRec,
       );
       if (!mounted) return;
     }
@@ -68,165 +86,140 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
+        title: const Text(
+          'OOTD',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF4A90E2),
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'OOTD',
-              style: TextStyle(
-                color: Color.fromARGB(239, 107, 141, 252),
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
         actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined, color: Color.fromARGB(255, 225, 204, 126), size: 24),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const NotificationListScreen(),
-                    ),
-                  );
-                },
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '3',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Consumer(
-            builder: (context, ref, child) {
-              final userState = ref.watch(userProvider);
-              return IconButton(
-                icon: const Icon(Icons.shopping_cart_outlined, color: Color.fromARGB(255, 75, 70, 70), size: 24),
-                onPressed: () {
-                  if (userState.isLoggedIn) {
-                    // 로그인된 경우: 장바구니 화면으로 이동
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const CartScreen(),
-                      ),
-                    );
-                  } else {
-                    // 로그인되지 않은 경우: 피드백 모달 표시
-                    FeedbackModal.show(context);
-                  }
-                },
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined, color: Color(0xFF030213)),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NotificationListScreen()),
               );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.shopping_cart_outlined, color: Color(0xFF030213)),
+            onPressed: () {
+              _handleCartAccess();
             },
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshData,
-        child: Consumer(
-          builder: (context, ref, child) {
-            // Use `ref.watch` to get the state and rebuild on changes.
-            // Note the corrected provider names.
-            final weatherState = ref.watch(weatherProvider);
-            final userState = ref.watch(userProvider);
-            // final recommendationState = ref.watch(recommendationProvider);
-            if (weatherState.isLoading) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
+      body: Consumer(
+        builder: (context, ref, child) {
+          final weatherState = ref.watch(weatherProvider);
+          final userState = ref.watch(userProvider);
+          final locationPermissionState = ref.watch(locationPermissionProvider);
+          bool isOnHomeRoute = true;
+          try {
+            final currentPath = GoRouterState.of(context).uri.path;
+            isOnHomeRoute = currentPath == '/home' || currentPath == '/';
+          } catch (_) {
+            isOnHomeRoute = true;
+          }
+          
+          
+          // 위치 권한 상태 변화 감지 (build 메서드에서만 ref.listen 사용 가능)
+          ref.listen<LocationPermissionState>(locationPermissionProvider, (previous, next) {
+            if (next.isGranted && _isNotificationDismissed) {
+              // 권한이 허용되면 알림 상태 리셋
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() {
+                    _isNotificationDismissed = false;
+                  });
+                }
+              });
             }
-
-            if (weatherState.error != null) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error: ${weatherState.error}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _refreshData,
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Pass state properties to widgets.
-                  _buildGreeting(userState.currentUser),
-                  
-                  const SizedBox(height: 24),
-                  
-                  if (weatherState.hasWeather)
-                    WeatherWidget(
-                      weather: weatherState.currentWeather!,
-                      onRefresh: _refreshData,
-                    ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  const HourlyRecommendationWidget(),
-                  
-                  const SizedBox(height: 24),
-                  
-                  const SituationRecommendationWidget(),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Today's Recommendations section removed
-                ],
+          });
+          
+          // 메인 페이지 내용 (항상 표시)
+          return Stack(
+            children: [
+              // 메인 페이지 내용 (무조건 표시)
+              RefreshIndicator(
+                onRefresh: _refreshData,
+                child: _buildMainContent(weatherState, userState),
               ),
-            );
-          },
-        ),
+              // 위치 권한 거부 시 우측 상단 알림 (Home 라우트에서만, 명시적 거부시에만)
+              if (isOnHomeRoute && (locationPermissionState.isDenied || locationPermissionState.isDeniedForever) && !_isNotificationDismissed)
+                _buildLocationPermissionNotification(context, ref),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildGreeting(dynamic user) { // Using dynamic for user model type safety
+  /// 메인 페이지 내용 구성
+  Widget _buildMainContent(WeatherState weatherState, UserState userState) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 인삿말 영역
+          _buildGreeting(userState.isLoggedIn ? userState.currentUser : null),
+          const SizedBox(height: 16),
+
+          const SizedBox(height: 8),
+          
+          // 현재 날씨 섹션
+          if (weatherState.isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (weatherState.currentWeather != null)
+            WeatherWidget(
+              weather: weatherState.currentWeather!,
+              onRefresh: () => ref.read(weatherProvider.notifier).refreshWeather(),
+            )
+          else
+            _buildWeatherErrorSection(weatherState.error ?? '날씨 정보를 가져올 수 없습니다'),
+          
+          const SizedBox(height: 16),
+          
+          // 추천 섹션 (항상 표시)
+          _buildRecommendationsSection(),
+        ],
+      ),
+    );
+  }
+
+  // 비로그인 게스트 사용자 기본값
+  UserModel _guestUser() {
+    return UserModel(
+      id: 'guest',
+      name: 'Guest',
+      email: '',
+      gender: '남성',
+      age: 25,
+      bodyType: '보통',
+      activityLevel: '보통',
+      temperatureSensitivity: TemperatureSensitivity.normal,
+      stylePreferences: const ['캐주얼', '깔끔한'],
+      situationPreferences: const {
+        '출근': true,
+        '데이트': true,
+        '운동': false,
+      },
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // 인삿말 빌더
+  Widget _buildGreeting(dynamic user) {
     final time = DateTime.now().hour;
     String greeting;
-    
     if (time < 12) {
       greeting = 'Good Morning';
     } else if (time < 17) {
@@ -238,6 +231,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 4),
         Text(
           greeting,
           style: const TextStyle(
@@ -257,5 +251,190 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  /// 날씨 에러 섹션
+  Widget _buildWeatherErrorSection(String error) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 48,
+            color: Colors.grey[600],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            error,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[700],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  ref.read(weatherProvider.notifier).fetchCurrentWeather();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF030213),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('다시 시도'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CitySearchScreen()),
+                  );
+                },
+                icon: const Icon(Icons.place_outlined),
+                label: const Text('위치 검색'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 추천 섹션 구성
+  Widget _buildRecommendationsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        // 시간대별 추천 (항상 표시)
+        HourlyRecommendationWidget(),
+        SizedBox(height: 24),
+        // 상황별 추천 (항상 표시)
+        SituationRecommendationWidget(),
+      ],
+    );
+  }
+
+  /// 위치 권한 거부 우측 상단 알림 위젯
+  Widget _buildLocationPermissionNotification(BuildContext context, WidgetRef ref) {
+    return Positioned(
+      top: 7,
+      right: 16,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 300),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.withOpacity(0.3), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              onTap: () async {
+                // 설정 페이지로 이동하여 권한 변경 유도
+                await ref.read(locationPermissionProvider.notifier).openLocationSettings();
+              },
+              child: Row(
+                children: const [
+                  Icon(Icons.location_off, size: 20, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text(
+                    '위치 권한 필요',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                  Spacer(),
+                  Icon(Icons.settings, size: 18, color: Colors.grey),
+                ],
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              '정확한 날씨 정보를 위해 위치 권한을 허용해주세요.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleCartAccess() {
+    final userState = ref.read(userProvider);
+    
+    if (userState.isLoggedIn) {
+      // 로그인 상태: 카트 화면으로 이동
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const CartScreen()),
+      );
+    } else {
+      // 비로그인 상태: 로그인 다이얼로그 표시
+      _showLoginDialog();
+    }
+  }
+
+  void _showLoginDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.shopping_cart_outlined, color: Color(0xFF4A90E2)),
+            SizedBox(width: 8),
+            Text('장바구니 이용'),
+          ],
+        ),
+        content: const Text(
+          '장바구니를 이용하려면 로그인이 필요합니다.\n로그인하시겠습니까?',
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              '취소',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.pushNamed('login');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4A90E2),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('로그인'),
+          ),
+        ],
+      ),
+    );
+  }
 
 }

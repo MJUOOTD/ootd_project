@@ -154,7 +154,7 @@ class RecommendationService {
       tags: _generateTags(occasion, weather),
       imageUrl: _getOutfitImageUrl(outfitItems, occasion),
     );
-    
+
     return OutfitRecommendation(
       id: 'outfit_${DateTime.now().millisecondsSinceEpoch}_$index',
       outfit: outfit,

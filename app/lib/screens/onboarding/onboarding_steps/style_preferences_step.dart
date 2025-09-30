@@ -17,24 +17,79 @@ class StylePreferencesStep extends StatefulWidget {
 class _StylePreferencesStepState extends State<StylePreferencesStep> {
   late List<String> _selectedPreferences;
 
+  final List<Map<String, dynamic>> _styleOptions = [
+    {
+      'value': 'casual',
+      'label': 'Casual',
+      'description': 'Relaxed and comfortable',
+      'icon': Icons.sports_baseball,
+      'color': Colors.blue,
+    },
+    {
+      'value': 'formal',
+      'label': 'Formal',
+      'description': 'Professional and elegant',
+      'icon': Icons.business,
+      'color': Colors.grey,
+    },
+    {
+      'value': 'streetwear',
+      'label': 'Streetwear',
+      'description': 'Urban and trendy',
+      'icon': Icons.streetview,
+      'color': Colors.black,
+    },
+    {
+      'value': 'vintage',
+      'label': 'Vintage',
+      'description': 'Classic and timeless',
+      'icon': Icons.access_time,
+      'color': Colors.brown,
+    },
+    {
+      'value': 'minimalist',
+      'label': 'Minimalist',
+      'description': 'Simple and clean',
+      'icon': Icons.remove,
+      'color': Colors.white,
+    },
+    {
+      'value': 'bohemian',
+      'label': 'Bohemian',
+      'description': 'Free-spirited and artistic',
+      'icon': Icons.palette,
+      'color': Colors.purple,
+    },
+    {
+      'value': 'sporty',
+      'label': 'Sporty',
+      'description': 'Active and athletic',
+      'icon': Icons.directions_run,
+      'color': Colors.green,
+    },
+    {
+      'value': 'romantic',
+      'label': 'Romantic',
+      'description': 'Feminine and delicate',
+      'icon': Icons.favorite,
+      'color': Colors.pink,
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
     _selectedPreferences = List.from(widget.selectedPreferences);
   }
 
-  void _updateData() {
-    widget.onChanged(_selectedPreferences);
-  }
-
-  void _togglePreference(String preference) {
+  void _togglePreference(String value) {
     setState(() {
-      if (_selectedPreferences.contains(preference)) {
-        _selectedPreferences.remove(preference);
+      if (_selectedPreferences.contains(value)) {
+        _selectedPreferences.remove(value);
       } else {
-        _selectedPreferences.add(preference);
+        _selectedPreferences.add(value);
       }
-      _updateData();
+      widget.onChanged(_selectedPreferences);
     });
   }
 
@@ -45,93 +100,181 @@ class _StylePreferencesStepState extends State<StylePreferencesStep> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: 20),
+          
+          // Title
           const Text(
-            '선호하는 스타일을 선택해주세요',
+            'Style Preferences',
             style: TextStyle(
-              color: Colors.white,
               fontSize: 28,
               fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            '여러 개 선택 가능해요. 선호하는 스타일을 모두 선택해주세요',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 40),
           
-          _buildStyleOptions(),
+          const SizedBox(height: 8),
+          
+          const Text(
+            'Select the styles that appeal to you most',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.white70,
+            ),
+          ),
+          
+          const SizedBox(height: 8),
+          
+          Text(
+            'Choose at least 3 styles',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.8),
+            ),
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Style Options Grid
+          Expanded(
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1.1,
+              ),
+              itemCount: _styleOptions.length,
+              itemBuilder: (context, index) {
+                final style = _styleOptions[index];
+                return _buildStyleOption(style);
+              },
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Selected Count
+          if (_selectedPreferences.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '${_selectedPreferences.length} styles selected',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          
+          const SizedBox(height: 16),
+          
+          // Info Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.info_outline,
+                  color: Colors.white70,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Your style preferences help us recommend outfits that match your personal taste',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStyleOptions() {
-    final styleOptions = [
-      {'value': 'casual', 'label': '캐주얼', 'icon': Icons.sports_outlined},
-      {'value': 'formal', 'label': '포멀', 'icon': Icons.business_center_outlined},
-      {'value': 'street', 'label': '스트릿', 'icon': Icons.sports_esports_outlined},
-      {'value': 'minimal', 'label': '미니멀', 'icon': Icons.design_services_outlined},
-      {'value': 'vintage', 'label': '빈티지', 'icon': Icons.history_edu_outlined},
-      {'value': 'romantic', 'label': '로맨틱', 'icon': Icons.favorite_outline},
-      {'value': 'sporty', 'label': '스포티', 'icon': Icons.sports_soccer_outlined},
-      {'value': 'bohemian', 'label': '보헤미안', 'icon': Icons.eco_outlined},
-      {'value': 'preppy', 'label': '프레피', 'icon': Icons.school_outlined},
-      {'value': 'edgy', 'label': '에지', 'icon': Icons.flash_on_outlined},
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 2.5,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: styleOptions.length,
-      itemBuilder: (context, index) {
-        final option = styleOptions[index];
-        final isSelected = _selectedPreferences.contains(option['value'] as String);
-        
-        return GestureDetector(
-          onTap: () => _togglePreference(option['value'] as String),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected ? Colors.white : Colors.transparent,
-                width: 2,
+  Widget _buildStyleOption(Map<String, dynamic> style) {
+    final isSelected = _selectedPreferences.contains(style['value']);
+    final color = style['color'] as Color;
+    
+    return GestureDetector(
+      onTap: () => _togglePreference(style['value']),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected ? color : Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? color : Colors.white.withOpacity(0.3),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.white : color.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                style['icon'],
+                color: isSelected ? color : Colors.white,
+                size: 32,
               ),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  option['icon'] as IconData,
-                  color: isSelected ? const Color(0xFF030213) : Colors.white,
-                  size: 24,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  option['label'] as String,
-                  style: TextStyle(
-                    color: isSelected ? const Color(0xFF030213) : Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+            const SizedBox(height: 12),
+            Text(
+              style['label'],
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? color : Colors.white,
+              ),
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 4),
+            Text(
+              style['description'],
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: isSelected 
+                    ? color.withOpacity(0.8) 
+                    : Colors.white70,
+              ),
+            ),
+            if (isSelected)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

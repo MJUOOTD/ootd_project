@@ -20,6 +20,19 @@ class _BodyInfoStepState extends State<BodyInfoStep> {
   late String _selectedBodyType;
   late String _selectedActivityLevel;
 
+  final List<Map<String, dynamic>> _bodyTypes = [
+    {'value': 'slim', 'label': 'Slim', 'description': 'Thin build'},
+    {'value': 'average', 'label': 'Average', 'description': 'Normal build'},
+    {'value': 'athletic', 'label': 'Athletic', 'description': 'Muscular build'},
+    {'value': 'curvy', 'label': 'Curvy', 'description': 'Curved build'},
+  ];
+
+  final List<Map<String, dynamic>> _activityLevels = [
+    {'value': 'low', 'label': 'Low', 'description': 'Mostly indoors, minimal activity'},
+    {'value': 'moderate', 'label': 'Moderate', 'description': 'Regular daily activities'},
+    {'value': 'high', 'label': 'High', 'description': 'Very active lifestyle'},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -38,220 +51,224 @@ class _BodyInfoStepState extends State<BodyInfoStep> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: 20),
+          
+          // Title
           const Text(
-            '체형과 활동량을 알려주세요',
+            'Body & Lifestyle',
             style: TextStyle(
-              color: Colors.white,
               fontSize: 28,
               fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
+          
           const SizedBox(height: 8),
+          
           const Text(
-            '개인화된 코디 추천을 위해 체형과 활동량 정보가 필요해요',
+            'Help us understand your body type and activity level',
             style: TextStyle(
-              color: Colors.white70,
               fontSize: 16,
+              color: Colors.white70,
             ),
           ),
+          
           const SizedBox(height: 40),
           
-          // Body Type Selection
+          // Body Type Section
           const Text(
-            '체형',
+            'Body Type',
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: FontWeight.w600,
+              color: Colors.white,
             ),
           ),
-          const SizedBox(height: 12),
-          _buildBodyTypeOptions(),
+          
+          const SizedBox(height: 16),
+          
+          ..._bodyTypes.map((bodyType) => _buildBodyTypeOption(bodyType)),
+          
           const SizedBox(height: 32),
           
-          // Activity Level Selection
+          // Activity Level Section
           const Text(
-            '활동량',
+            'Activity Level',
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: FontWeight.w600,
+              color: Colors.white,
             ),
           ),
-          const SizedBox(height: 12),
-          _buildActivityLevelOptions(),
+          
+          const SizedBox(height: 16),
+          
+          ..._activityLevels.map((level) => _buildActivityLevelOption(level)),
+          
+          const Spacer(),
+          
+          // Info Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.info_outline,
+                  color: Colors.white70,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'This information helps us recommend outfits that fit your lifestyle and comfort preferences',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildBodyTypeOptions() {
-    final bodyTypes = [
-      {'value': 'slim', 'label': '슬림', 'description': '마른 체형'},
-      {'value': 'average', 'label': '보통', 'description': '균형잡힌 체형'},
-      {'value': 'athletic', 'label': '근육형', 'description': '운동으로 단련된 체형'},
-      {'value': 'curvy', 'label': '커브형', 'description': '곡선이 아름다운 체형'},
-    ];
-
-    return Column(
-      children: bodyTypes.map((type) {
-        final isSelected = _selectedBodyType == type['value'];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedBodyType = type['value']!;
-                _updateData();
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isSelected ? Colors.white : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isSelected ? const Color(0xFF030213) : Colors.transparent,
-                      border: Border.all(
-                        color: isSelected ? const Color(0xFF030213) : Colors.white,
-                        width: 2,
-                      ),
-                    ),
-                    child: isSelected
-                        ? const Icon(
-                            Icons.check,
-                            size: 12,
-                            color: Colors.white,
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          type['label']!,
-                          style: TextStyle(
-                            color: isSelected ? const Color(0xFF030213) : Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          type['description']!,
-                          style: TextStyle(
-                            color: isSelected 
-                                ? const Color(0xFF030213).withOpacity(0.7)
-                                : Colors.white.withOpacity(0.7),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+  Widget _buildBodyTypeOption(Map<String, dynamic> bodyType) {
+    final isSelected = _selectedBodyType == bodyType['value'];
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedBodyType = bodyType['value'];
+            _updateData();
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? Colors.white : Colors.white.withOpacity(0.3),
             ),
           ),
-        );
-      }).toList(),
+          child: Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected ? const Color(0xFF030213) : Colors.transparent,
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFF030213) : Colors.white,
+                    width: 2,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      bodyType['label'],
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected ? const Color(0xFF030213) : Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      bodyType['description'],
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isSelected ? const Color(0xFF030213).withOpacity(0.7) : Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildActivityLevelOptions() {
-    final activityLevels = [
-      {'value': 'low', 'label': '낮음', 'description': '주로 실내에서 활동'},
-      {'value': 'moderate', 'label': '보통', 'description': '가벼운 운동과 활동'},
-      {'value': 'high', 'label': '높음', 'description': '규칙적인 운동과 활동'},
-      {'value': 'very_high', 'label': '매우 높음', 'description': '매일 운동하는 활동적인 생활'},
-    ];
-
-    return Column(
-      children: activityLevels.map((level) {
-        final isSelected = _selectedActivityLevel == level['value'];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedActivityLevel = level['value']!;
-                _updateData();
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isSelected ? Colors.white : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isSelected ? const Color(0xFF030213) : Colors.transparent,
-                      border: Border.all(
-                        color: isSelected ? const Color(0xFF030213) : Colors.white,
-                        width: 2,
-                      ),
-                    ),
-                    child: isSelected
-                        ? const Icon(
-                            Icons.check,
-                            size: 12,
-                            color: Colors.white,
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          level['label']!,
-                          style: TextStyle(
-                            color: isSelected ? const Color(0xFF030213) : Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          level['description']!,
-                          style: TextStyle(
-                            color: isSelected 
-                                ? const Color(0xFF030213).withOpacity(0.7)
-                                : Colors.white.withOpacity(0.7),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+  Widget _buildActivityLevelOption(Map<String, dynamic> level) {
+    final isSelected = _selectedActivityLevel == level['value'];
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedActivityLevel = level['value'];
+            _updateData();
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? Colors.white : Colors.white.withOpacity(0.3),
             ),
           ),
-        );
-      }).toList(),
+          child: Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected ? const Color(0xFF030213) : Colors.transparent,
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFF030213) : Colors.white,
+                    width: 2,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      level['label'],
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected ? const Color(0xFF030213) : Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      level['description'],
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isSelected ? const Color(0xFF030213).withOpacity(0.7) : Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

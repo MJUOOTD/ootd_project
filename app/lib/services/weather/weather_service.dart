@@ -1,4 +1,4 @@
-import '../../models/weather_model.dart';
+import '../../../models/weather_model.dart';
 
 /// Weather service interface for fetching weather data
 /// 
@@ -44,28 +44,7 @@ abstract class WeatherService {
   DateTime? getLastUpdateTime();
 }
 
-/// Weather exception for weather-related errors
-class WeatherException implements Exception {
-  final String message;
-  final WeatherErrorType type;
-  final int? statusCode;
-
-  const WeatherException(this.message, this.type, {this.statusCode});
-
-  @override
-  String toString() => 'WeatherException: $message (${type.name})';
-}
-
-/// Types of weather errors
-enum WeatherErrorType {
-  networkError,
-  apiError,
-  invalidApiKey,
-  locationError,
-  parseError,
-  cacheError,
-  unknown,
-}
+// WeatherException and WeatherErrorType are now defined in weather_model.dart
 
 /// Mock implementation of WeatherService for development
 class MockWeatherService implements WeatherService {
